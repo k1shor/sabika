@@ -36,7 +36,8 @@ export default function Footer() {
         <div className="grid gap-10 md:grid-cols-3">
           <div>
             <div className="flex items-center gap-2">
-              <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-blue-600 to-red-500 shadow-sm" />
+              {/* <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-blue-600 to-red-500 shadow-sm" /> */}
+              <img src="./logo-horizontal.png" className="h-40"/>
               <div className="leading-tight">
                 <div className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">
                   Nursing Nepal

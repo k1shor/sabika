@@ -133,12 +133,12 @@ export default function Header() {
       <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between gap-4">
         <Link href="/" className="flex items-center gap-3">
           <Image
-            src={isDark ? "/logo-horizontal-white.png" : "/logo-horizontal.png"}
+            src={isDark ? "/banner-dark.png" : "/banner.png"}
             alt="Nursing Nepal"
-            width={220}
-            height={48}
+            width={260}
+            height={56}
             priority
-            className="h-10 w-auto"
+            className="h-10 w-auto object-contain"
           />
         </Link>
 

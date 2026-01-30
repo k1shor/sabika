@@ -7,6 +7,17 @@ import Button from "@/components/Button";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+export async function generateMetadata({ params }) {
+  const { slug } = await params;
+  const s = decodeURIComponent(String(slug || "")).trim();
+
+  return {
+    title: s.replace(/-/g, " "),
+    description: "Read nursing articles and care guidance on Nursing Nepal.",
+  };
+}
+
+
 function normalizeSlug(v) {
     return decodeURIComponent(String(v || "")).trim().replace(/\/+$/, "").toLowerCase();
 }
