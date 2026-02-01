@@ -27,9 +27,9 @@ export async function POST(req) {
   const password = parsed.data.password;
 
   if (!useDb()) {
-    const token = signToken({ sub: "demo-user", name, email });
+    const token = signToken({ sub: "demo-user", name, email, role: "user" });
     await setAuthCookie(token);
-    return NextResponse.json({ ok: true, user: { name, email } });
+    return NextResponse.json({ ok: true, user: { name, email, role: "user" } });
   }
 
   await dbConnect();
@@ -45,10 +45,14 @@ export async function POST(req) {
     name,
     email,
     passwordHash,
+    role: "user",
   });
 
-  const token = signToken({ sub: String(user._id), name: user.name, email: user.email });
+  const token = signToken({ sub: String(user._id), name: user.name, email: user.email, role: user.role });
   await setAuthCookie(token);
 
-  return NextResponse.json({ ok: true, user: { name: user.name, email: user.email } });
+  return NextResponse.json({
+    ok: true,
+    user: { name: user.name, email: user.email, role: user.role },
+  });
 }

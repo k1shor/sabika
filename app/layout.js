@@ -8,13 +8,17 @@ const gscToken = process.env.NEXT_PUBLIC_GSC_TOKEN || "";
 
 export const metadata = {
   metadataBase: new URL(siteUrl),
+
   title: {
     default: "Nursing Nepal",
     template: "%s | Nursing Nepal",
   },
+
   description:
     "Nursing Nepal is a modern nursing care and health education platform providing nursing articles, patient care guidance, and learning resources for Nepal.",
+
   applicationName: "Nursing Nepal",
+
   keywords: [
     "Nursing Nepal",
     "nursing care",
@@ -26,14 +30,15 @@ export const metadata = {
     "wound care",
     "Nepal nursing",
   ],
+
   authors: [{ name: "Nursing Nepal" }],
   creator: "Nursing Nepal",
   publisher: "Nursing Nepal",
 
   icons: {
-    icon: "/logo.png",
-    shortcut: "/logo.png",
-    apple: "/logo.png",
+    icon: [{ url: "/favicon.ico" }, { url: "/logo.png", type: "image/png" }],
+    shortcut: [{ url: "/favicon.ico" }],
+    apple: [{ url: "/apple-touch-icon.png" }],
   },
 
   alternates: {
@@ -48,12 +53,8 @@ export const metadata = {
       "Nursing Nepal provides nursing articles, care guidance, and health learning resources for Nepal.",
     siteName: "Nursing Nepal",
     images: [
-      {
-        url: "/banner.png",
-        width: 1200,
-        height: 630,
-        alt: "Nursing Nepal",
-      },
+      { url: "/banner.png", width: 1200, height: 630, alt: "Nursing Nepal" },
+      { url: "/banner-dark.png", width: 1200, height: 630, alt: "Nursing Nepal Dark" },
     ],
   },
 
@@ -77,11 +78,25 @@ export const metadata = {
     },
   },
 
-  verification: gscToken
-    ? {
-        google: gscToken,
-      }
-    : undefined,
+  verification: gscToken ? { google: gscToken } : undefined,
+
+  formatDetection: {
+    telephone: false,
+    email: false,
+    address: false,
+  },
+
+  manifest: "/site.webmanifest",
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#020617" },
+  ],
 };
 
 export default function RootLayout({ children }) {

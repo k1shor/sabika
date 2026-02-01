@@ -25,25 +25,24 @@ export async function POST(req) {
   const password = parsed.data.password;
 
   if (!useDb()) {
-    const token = signToken({ sub: "demo-user", name: "Demo User", email });
+    const token = signToken({ sub: "demo-admin", name: "Demo Admin", email, role: "admin" });
     await setAuthCookie(token);
-    return NextResponse.json({ ok: true, user: { name: "Demo User", email } });
+    return NextResponse.json({ ok: true, user: { name: "Demo Admin", email, role: "admin" } });
   }
 
   await dbConnect();
 
   const user = await User.findOne({ email }).lean();
-  if (!user) {
-    return NextResponse.json({ ok: false, error: "Invalid email or password" }, { status: 401 });
-  }
+  if (!user) return NextResponse.json({ ok: false, error: "Invalid email or password" }, { status: 401 });
 
   const ok = await bcrypt.compare(password, user.passwordHash || "");
-  if (!ok) {
-    return NextResponse.json({ ok: false, error: "Invalid email or password" }, { status: 401 });
-  }
+  if (!ok) return NextResponse.json({ ok: false, error: "Invalid email or password" }, { status: 401 });
 
-  const token = signToken({ sub: String(user._id), name: user.name, email: user.email });
+  const token = signToken({ sub: String(user._id), name: user.name, email: user.email, role: user.role || "user" });
   await setAuthCookie(token);
 
-  return NextResponse.json({ ok: true, user: { name: user.name, email: user.email } });
+  return NextResponse.json({
+    ok: true,
+    user: { name: user.name, email: user.email, role: user.role || "user" },
+  });
 }

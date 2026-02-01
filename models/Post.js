@@ -8,6 +8,7 @@ const PostSchema = new mongoose.Schema(
     content: { type: String, default: "" },
     tags: { type: [String], default: [] },
     author: { type: String, default: "Nursing Nepal" },
+    readTime: { type: String, default: "5 min read" },
     publishedAt: { type: Date, default: Date.now },
   },
   { timestamps: true }

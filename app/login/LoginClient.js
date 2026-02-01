@@ -41,7 +41,11 @@ export default function LoginClient() {
 
     if (data?.ok) {
       router.refresh();
-      router.push(nextUrl);
+      if (data?.user?.role === "admin") {
+        router.push("/admin");
+      } else {
+        router.push(nextUrl);
+      }
       return;
     }
 
@@ -90,7 +94,10 @@ export default function LoginClient() {
 
             <div className="text-sm font-semibold text-slate-600 dark:text-blue-100/75">
               Don’t have an account?{" "}
-              <Link className="font-extrabold text-blue-700 hover:text-red-500 transition dark:text-blue-200 dark:hover:text-red-300" href="/register">
+              <Link
+                className="font-extrabold text-blue-700 hover:text-red-500 transition dark:text-blue-200 dark:hover:text-red-300"
+                href="/register"
+              >
                 Register
               </Link>
             </div>
