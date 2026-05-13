@@ -1,48 +1,61 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-import { dbConnect, useDb } from "@/lib/db";
+import { dbConnect } from "@/lib/db";
 import { User } from "@/models/User";
-import { signToken, setAuthCookie } from "@/lib/auth";
-
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+import jwt from "jsonwebtoken";
 
 const LoginSchema = z.object({
-  email: z.string().email().max(200),
-  password: z.string().min(1).max(200),
+  email: z.string().email(),
+  password: z.string(),
 });
 
 export async function POST(req) {
-  const body = await req.json().catch(() => null);
+  const body = await req.json();
+
   const parsed = LoginSchema.safeParse(body);
-
   if (!parsed.success) {
-    return NextResponse.json({ ok: false, error: "Invalid input" }, { status: 400 });
-  }
-
-  const email = parsed.data.email.trim().toLowerCase();
-  const password = parsed.data.password;
-
-  if (!useDb()) {
-    const token = signToken({ sub: "demo-admin", name: "Demo Admin", email, role: "admin" });
-    await setAuthCookie(token);
-    return NextResponse.json({ ok: true, user: { name: "Demo Admin", email, role: "admin" } });
+    return NextResponse.json({ error: "Invalid input" }, { status: 400 });
   }
 
   await dbConnect();
 
-  const user = await User.findOne({ email }).lean();
-  if (!user) return NextResponse.json({ ok: false, error: "Invalid email or password" }, { status: 401 });
+  const { email, password } = parsed.data;
 
-  const ok = await bcrypt.compare(password, user.passwordHash || "");
-  if (!ok) return NextResponse.json({ ok: false, error: "Invalid email or password" }, { status: 401 });
+  const user = await User.findOne({ email });
+  if (!user) {
+    return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+  }
 
-  const token = signToken({ sub: String(user._id), name: user.name, email: user.email, role: user.role || "user" });
-  await setAuthCookie(token);
+  const ok = await bcrypt.compare(password, user.passwordHash);
+  if (!ok) {
+    return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+  }
+  if (!user.isVerified) {
+    return NextResponse.json(
+      { error: "Please verify your email first" },
+      { status: 403 }
+    );
+  }
+  const token = jwt.sign(
+    {
+      id: user._id,
+      email: user.email,
+      role: user.role,
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "1d" }
+  );
 
-  return NextResponse.json({
-    ok: true,
-    user: { name: user.name, email: user.email, role: user.role || "user" },
+  const res = NextResponse.json({
+    message: "Login success",
+    success: true,
   });
+
+  res.cookies.set("token", token, {
+    httpOnly: true,
+    path: "/",
+  });
+  
+  return res;
 }

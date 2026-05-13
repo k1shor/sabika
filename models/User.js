@@ -6,7 +6,15 @@ const UserSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true, lowercase: true, trim: true, maxlength: 200 },
     passwordHash: { type: String, required: true },
     role: { type: String, default: "user" },
+    isVerified: {type: Boolean,default: false},
+    isAdmin:{type: Boolean,default: false},
+    forgotPasswordToken:String,
+    forgotPasswordTokenExpiry:Date,
+    verifyToken:String,
+    verifyTokenExpiry:Date
+
   },
+
   { timestamps: true }
 );
 

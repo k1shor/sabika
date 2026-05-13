@@ -1,11 +1,26 @@
 import { NextResponse } from "next/server";
-import { getAuthUser } from "@/lib/auth";
+import { verifyToken } from "@/lib/auth";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+export async function GET(req) {
+  try {
+    const token = req.cookies.get("token")?.value;
 
-export async function GET() {
-  const user = await getAuthUser();
-  if (!user) return NextResponse.json({ ok: false, user: null }, { status: 200 });
-  return NextResponse.json({ ok: true, user });
+    if (!token) {
+      return NextResponse.json({ ok: false, user: null });
+    }
+
+    const decoded = verifyToken(token);
+
+    return NextResponse.json({
+      ok: true,
+      user: decoded,
+    });
+
+  } catch (err) {
+    return NextResponse.json({
+      ok: false,
+      user: null,
+      error: err.message
+    });
+  }
 }
