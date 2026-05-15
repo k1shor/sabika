@@ -1,29 +1,53 @@
 import { NextResponse } from "next/server";
+import crypto from "crypto";
 import { dbConnect } from "@/lib/db";
 import { User } from "@/models/User";
 
 export async function POST(req) {
-  const { token } = await req.json();
+  try {
+    const body = await req.json().catch(() => null);
+    const token = body?.token;
 
-  await dbConnect();
+    if (!token || typeof token !== "string") {
+      return NextResponse.json(
+        { ok: false, error: "Verification token is required" },
+        { status: 400 }
+      );
+    }
 
-  const user = await User.findOne({
-    verifyToken: token,
-    verifyTokenExpiry: { $gt: Date.now() },
-  });
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(token)
+      .digest("hex");
 
-  if (!user) {
-    return NextResponse.json({ error: "Invalid token" }, { status: 400 });
+    await dbConnect();
+
+    const user = await User.findOne({
+      verifyToken: { $in: [hashedToken, token] },
+      verifyTokenExpiry: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { ok: false, error: "Invalid or expired token" },
+        { status: 400 }
+      );
+    }
+
+    user.isVerified = true;
+    user.verifyToken = undefined;
+    user.verifyTokenExpiry = undefined;
+
+    await user.save();
+
+    return NextResponse.json({
+      ok: true,
+      message: "Email verified",
+    });
+  } catch {
+    return NextResponse.json(
+      { ok: false, error: "Email verification failed" },
+      { status: 500 }
+    );
   }
-
-  user.isVerified = true;
-  user.verifyToken = undefined;
-  user.verifyTokenExpiry = undefined;
-
-  await user.save();
-
-  return NextResponse.json({
-    message: "Email verified",
-    success: true,
-  });
 }

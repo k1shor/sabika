@@ -35,7 +35,7 @@ export default async function BlogsPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="rounded-2xl bg-gradient-to-r from-blue-600 to-red-500 px-4 py-2 text-sm font-extrabold text-white shadow-sm">
+            <div className="rounded-2xl bg-linear-to-r from-blue-600 to-red-500 px-4 py-2 text-sm font-extrabold text-white shadow-sm">
               {posts.length} Articles
             </div>
           </div>

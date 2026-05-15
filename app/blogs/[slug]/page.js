@@ -87,7 +87,7 @@ export default async function BlogDetailsPage({ params }) {
                     </p>
                     <Link
                         href="/blogs"
-                        className="mt-6 inline-flex rounded-xl bg-gradient-to-r from-blue-700 to-blue-500 px-4 py-2 text-sm font-extrabold text-white shadow-sm hover:brightness-110 active:scale-[0.98] transition"
+                        className="mt-6 inline-flex rounded-xl bg-linear-to-r from-blue-700 to-blue-500 px-4 py-2 text-sm font-extrabold text-white shadow-sm hover:brightness-110 active:scale-[0.98] transition"
                     >
                         Back to Articles
                     </Link>

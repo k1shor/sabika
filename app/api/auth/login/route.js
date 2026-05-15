@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { dbConnect } from "@/lib/db";
 import { User } from "@/models/User";
-import jwt from "jsonwebtoken";
+import { signToken } from "@/lib/auth";
 
 const LoginSchema = z.object({
   email: z.string().email(),
@@ -11,51 +11,69 @@ const LoginSchema = z.object({
 });
 
 export async function POST(req) {
-  const body = await req.json();
+  try {
+    const body = await req.json().catch(() => null);
 
-  const parsed = LoginSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid input" }, { status: 400 });
-  }
+    const parsed = LoginSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ ok: false, error: "Invalid input" }, { status: 400 });
+    }
 
-  await dbConnect();
+    await dbConnect();
 
-  const { email, password } = parsed.data;
+    const email = parsed.data.email.trim().toLowerCase();
+    const password = parsed.data.password;
 
-  const user = await User.findOne({ email });
-  if (!user) {
-    return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
-  }
+    const user = await User.findOne({ email });
+    if (!user) {
+      return NextResponse.json({ ok: false, error: "Invalid credentials" }, { status: 401 });
+    }
 
-  const ok = await bcrypt.compare(password, user.passwordHash);
-  if (!ok) {
-    return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
-  }
-  if (!user.isVerified) {
-    return NextResponse.json(
-      { error: "Please verify your email first" },
-      { status: 403 }
-    );
-  }
-  const token = jwt.sign(
-    {
+    const passwordMatches = await bcrypt.compare(password, user.passwordHash);
+    if (!passwordMatches) {
+      return NextResponse.json({ ok: false, error: "Invalid credentials" }, { status: 401 });
+    }
+
+    if (!user.isVerified) {
+      return NextResponse.json(
+        { ok: false, error: "Please verify your email first" },
+        { status: 403 }
+      );
+    }
+
+    const token = signToken({
       id: user._id,
+      name: user.name,
       email: user.email,
       role: user.role,
-    },
-    process.env.JWT_SECRET,
-    { expiresIn: "1d" }
-  );
+    });
 
-  const res = NextResponse.json({
-    message: "Login success",
-    success: true,
-  });
+    const safeUser = {
+      id: String(user._id),
+      name: user.name,
+      email: user.email,
+      role: user.role || "user",
+    };
 
-  res.cookies.set("token", token, {
-    httpOnly: true,
-    path: "/",
-  });
-  
-  return res;
+    const res = NextResponse.json({
+      ok: true,
+      message: "Login success",
+      user: safeUser,
+    });
+
+    res.cookies.set("token", token, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 60 * 60 * 24,
+    });
+
+    return res;
+  } catch {
+    return NextResponse.json(
+      { ok: false, error: "Login failed" },
+      { status: 500 }
+    );
+  }
 }

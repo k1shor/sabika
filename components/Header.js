@@ -58,7 +58,7 @@ export default function Header() {
       .then((r) => r.json())
       .then((d) => setMeData(d?.ok ? d : { ok: false, user: null }))
       .catch(() => setMeData({ ok: false, user: null }));
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
     setOpen(false);
@@ -80,6 +80,17 @@ export default function Header() {
   };
 
   const isDark = mode === "dark";
+  const isAdmin = meData?.user?.role === "admin";
+  const canApplyAsWriter =
+    meData?.user?.role === "blog_writer" &&
+    meData.user?.writerVerification?.status !== "pending" &&
+    meData.user?.writerVerification?.status !== "approved";
+  const accountLabel =
+    meData?.user?.role === "admin"
+      ? "Admin"
+      : meData?.user?.role === "blog_writer"
+        ? `Blog writer (${meData.user?.writerVerification?.status || "pending"})`
+        : "Visitor";
 
   const Nav = ({ onClick }) => (
     <>
@@ -118,13 +129,24 @@ export default function Header() {
       >
         Contact
       </Link>
-      <Link
-        onClick={onClick}
-        className="hover:text-blue-600 dark:hover:text-red-300 transition"
-        href="/admin"
-      >
-        Admin
-      </Link>
+      {isAdmin && (
+        <Link
+          onClick={onClick}
+          className="hover:text-blue-600 dark:hover:text-red-300 transition"
+          href="/admin"
+        >
+          Admin
+        </Link>
+      )}
+      {canApplyAsWriter && (
+        <Link
+          onClick={onClick}
+          className="hover:text-blue-600 dark:hover:text-red-300 transition"
+          href="/apply-writer"
+        >
+          Apply Writer
+        </Link>
+      )}
     </>
   );
 
@@ -162,6 +184,9 @@ export default function Header() {
                 Welcome,{" "}
                 <span className="font-semibold text-slate-900 dark:text-white">
                   {meData.user?.name || "User"}
+                </span>{" "}
+                <span className="font-semibold text-blue-700 dark:text-blue-200">
+                  {accountLabel}
                 </span>
               </div>
 

@@ -13,6 +13,7 @@ const RegisterSchema = z.object({
   name: z.string().min(2).max(80),
   email: z.string().email().max(200),
   password: z.string().min(6).max(200),
+  role: z.enum(["visitor", "blog_writer"]).default("visitor"),
 });
 
 export async function POST(req) {
@@ -31,6 +32,7 @@ export async function POST(req) {
     const name = parsed.data.name.trim();
     const email = parsed.data.email.trim().toLowerCase();
     const password = parsed.data.password;
+    const role = parsed.data.role;
 
     await dbConnect();
 
@@ -49,8 +51,9 @@ export async function POST(req) {
       name,
       email,
       passwordHash,
-      role: "user",
+      role,
       isVerified: false,
+      writerVerification: { status: "none" },
     });
 
     await sendEmail({
@@ -61,13 +64,13 @@ export async function POST(req) {
 
     return NextResponse.json({
       ok: true,
-      message: "User registered. Check email to verify account.",
+      message: "Registered successfully. Check your email to verify account.",
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       {
         ok: false,
-        error: error.message,
+        error: "Registration failed",
       },
       { status: 500 }
     );

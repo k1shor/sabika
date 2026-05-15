@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { DUMMY_POSTS } from "@/lib/dummy";
 import { dbConnect, useDb } from "@/lib/db";
 import { Post } from "@/models/Post";
-import { getAuthUser } from "@/lib/auth";
+import { requireApprovedWriter } from "@/lib/auth";
 import { PostCreateSchema } from "@/lib/validators";
 
 export async function GET() {
@@ -19,8 +19,17 @@ export async function GET() {
 }
 
 export async function POST(req) {
-  const user = getAuthUser();
-  if (!user) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  const auth = await requireApprovedWriter();
+  if (!auth.ok) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: auth.error || "Unauthorized",
+        next: auth.error === "Writer approval required" ? "/apply-writer" : undefined,
+      },
+      { status: auth.error === "Unauthorized" ? 401 : 403 }
+    );
+  }
 
   const body = await req.json();
   const parsed = PostCreateSchema.safeParse(body);

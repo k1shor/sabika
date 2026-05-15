@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import bcryptjs from "bcryptjs";
+import crypto from "crypto";
 import { User } from "@/models/User";
 
 export const sendEmail = async ({
@@ -8,10 +8,11 @@ export const sendEmail = async ({
   userId,
 }) => {
   try {
-    const hashedToken = await bcryptjs.hash(
-      userId.toString(),
-      10
-    );
+    const token = crypto.randomBytes(32).toString("hex");
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(token)
+      .digest("hex");
 
     // VERIFY EMAIL
     if (emailType === "VERIFY") {
@@ -40,8 +41,8 @@ export const sendEmail = async ({
 
     const link =
       emailType === "VERIFY"
-        ? `${process.env.DOMAIN}/verifyemail?token=${hashedToken}`
-        : `${process.env.DOMAIN}/resetpassword?token=${hashedToken}`;
+        ? `${process.env.DOMAIN}/verifyEmail?token=${token}`
+        : `${process.env.DOMAIN}/resetpassword?token=${token}`;
 
     const mailOptions = {
       from: "team@example.com",

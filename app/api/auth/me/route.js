@@ -1,26 +1,24 @@
 import { NextResponse } from "next/server";
-import { verifyToken } from "@/lib/auth";
+import { getAuthUser } from "@/lib/auth";
 
-export async function GET(req) {
+export async function GET() {
   try {
-    const token = req.cookies.get("token")?.value;
+    const user = await getAuthUser();
 
-    if (!token) {
+    if (!user) {
       return NextResponse.json({ ok: false, user: null });
     }
 
-    const decoded = verifyToken(token);
-
     return NextResponse.json({
       ok: true,
-      user: decoded,
+      user,
     });
 
-  } catch (err) {
+  } catch {
     return NextResponse.json({
       ok: false,
       user: null,
-      error: err.message
+      error: "Unable to read current user",
     });
   }
 }
