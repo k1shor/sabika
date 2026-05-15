@@ -41,18 +41,28 @@ export async function POST(req) {
       );
     }
 
+    const role = user.isAdmin
+      ? "admin"
+      : ["visitor", "blog_writer", "admin"].includes(user.role)
+        ? user.role
+        : "visitor";
+
     const token = signToken({
       id: user._id,
       name: user.name,
       email: user.email,
-      role: user.role,
+      role,
     });
 
     const safeUser = {
       id: String(user._id),
       name: user.name,
       email: user.email,
-      role: user.role || "user",
+      role,
+      writerVerification: {
+        status: user.writerVerification?.status || "none",
+        category: user.writerVerification?.category || null,
+      },
     };
 
     const res = NextResponse.json({
