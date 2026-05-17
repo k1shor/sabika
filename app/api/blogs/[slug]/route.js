@@ -16,7 +16,16 @@ export async function GET(_req, { params }) {
   }
 
   await dbConnect();
-  const post = await Post.findOne({ slug }).lean();
-  if (!post) return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
-  return NextResponse.json({ ok: true, post });
+
+  const dbPost = await Post.findOne({ slug }).lean();
+  if (dbPost) {
+    return NextResponse.json({ ok: true, post: serializePost(dbPost) });
+  }
+
+  const dummyPost = findDummy();
+  if (!dummyPost) {
+    return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
+  }
+
+  return NextResponse.json({ ok: true, post: serializePost(dummyPost) });
 }

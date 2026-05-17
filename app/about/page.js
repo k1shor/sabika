@@ -121,7 +121,7 @@ export default function AboutPage() {
           </div>
         </div>
 
-        <div className="mt-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 rounded-2xl border border-blue-400/20 bg-gradient-to-r from-blue-600 to-red-500 p-6 text-white shadow-sm">
+        <div className="mt-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 rounded-2xl border border-blue-400/20 bg-linear-to-r from-blue-600 to-red-500 p-6 text-white shadow-sm">
           <div>
             <div className="text-lg font-extrabold">Want to suggest a topic?</div>
             <div className="mt-1 text-sm text-white/90">
@@ -132,7 +132,7 @@ export default function AboutPage() {
 
           <Link
             href="/contact"
-            className="rounded-xl bg-gradient-to-r from-blue-700 to-blue-500 px-4 py-2 text-sm font-extrabold text-white shadow-sm
+            className="rounded-xl bg-linear-to-r from-blue-700 to-blue-500 px-4 py-2 text-sm font-extrabold text-white shadow-sm
             ring-1 ring-white/30 hover:brightness-110 hover:ring-white/50
             active:scale-[0.98] transition"
           >

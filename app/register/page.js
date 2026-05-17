@@ -10,6 +10,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState(null);
   const [ok, setOk] = useState(null);
+  const [role, setRole] = useState("visitor");
 
   const submit = async (e) => {
     e.preventDefault();
@@ -22,6 +23,7 @@ export default function RegisterPage() {
       name: String(form.get("name") || ""),
       email: String(form.get("email") || ""),
       password: String(form.get("password") || ""),
+      role: String(form.get("role") || "visitor"),
     };
 
     const res = await fetch("/api/auth/register", {
@@ -34,8 +36,9 @@ export default function RegisterPage() {
     setLoading(false);
 
     if (data?.ok) {
-      setOk("Registered successfully. Your account was created as a user.");
+      setOk(data.message || "Registered successfully. Check your email to verify your account before login.");
       e.target.reset();
+      setRole("visitor");
     } else {
       setErr(data?.error || "Registration failed");
     }
@@ -43,13 +46,9 @@ export default function RegisterPage() {
 
   return (
     <Container>
-      <div className="mx-auto max-w-md rounded-3xl border border-slate-200 bg-white/70 p-8 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25">
-        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-          Register
-        </h1>
-        <p className="mt-2 text-slate-600 text-sm dark:text-blue-100/75">
-          Create your Nursing Nepal account.
-        </p>
+      <div className="mx-auto max-w-md rounded-3xl border border-slate-200 bg-white/70 p-8 shadow-sm">
+        <h1 className="text-3xl font-extrabold tracking-tight">Register</h1>
+        <p className="mt-2 text-slate-600 text-sm">Create your account.</p>
 
         <form onSubmit={submit} className="mt-6 grid gap-4">
           <div>
@@ -71,6 +70,19 @@ export default function RegisterPage() {
             <div className="mt-2">
               <Input name="password" type="password" placeholder="Minimum 6 chars" required />
             </div>
+          </div>
+
+          <div>
+            <label className="text-sm font-semibold text-slate-700">Account type</label>
+            <select
+              name="role"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              className="mt-2 w-full rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15"
+            >
+              <option value="visitor">Visitor</option>
+              <option value="blog_writer">Blog writer</option>
+            </select>
           </div>
 
           {err && (

@@ -97,7 +97,7 @@ export default function Header() {
       .then((r) => r.json())
       .then((d) => setMeData(d?.ok ? d : { ok: false, user: null }))
       .catch(() => setMeData({ ok: false, user: null }));
-  }, []);
+  }, [pathname]);
 
   const toggleTheme = () => {
     const next = mode === "dark" ? "light" : "dark";
@@ -115,6 +115,75 @@ export default function Header() {
   };
 
   const isDark = mode === "dark";
+  const isAdmin = meData?.user?.role === "admin";
+  const canApplyAsWriter =
+    meData?.user?.role === "blog_writer" &&
+    meData.user?.writerVerification?.status !== "pending" &&
+    meData.user?.writerVerification?.status !== "approved";
+  const accountLabel =
+    meData?.user?.role === "admin"
+      ? "Admin"
+      : meData?.user?.role === "blog_writer"
+        ? `Blog writer (${meData.user?.writerVerification?.status || "pending"})`
+        : "Visitor";
+
+  const Nav = ({ onClick }) => (
+    <>
+      <Link
+        onClick={onClick}
+        className="hover:text-blue-600 dark:hover:text-red-300 transition"
+        href="/"
+      >
+        Home
+      </Link>
+      <Link
+        onClick={onClick}
+        className="hover:text-blue-600 dark:hover:text-red-300 transition"
+        href="/about"
+      >
+        About
+      </Link>
+      <Link
+        onClick={onClick}
+        className="hover:text-blue-600 dark:hover:text-red-300 transition"
+        href="/blogs"
+      >
+        Articles
+      </Link>
+      <Link
+        onClick={onClick}
+        className="hover:text-blue-600 dark:hover:text-red-300 transition"
+        href="/faq"
+      >
+        FAQ
+      </Link>
+      <Link
+        onClick={onClick}
+        className="hover:text-blue-600 dark:hover:text-red-300 transition"
+        href="/contact"
+      >
+        Contact
+      </Link>
+      {isAdmin && (
+        <Link
+          onClick={onClick}
+          className="hover:text-blue-600 dark:hover:text-red-300 transition"
+          href="/admin"
+        >
+          Admin
+        </Link>
+      )}
+      {canApplyAsWriter && (
+        <Link
+          onClick={onClick}
+          className="hover:text-blue-600 dark:hover:text-red-300 transition"
+          href="/apply-writer"
+        >
+          Apply Writer
+        </Link>
+      )}
+    </>
+  );
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200/70 bg-white/70 backdrop-blur dark:border-blue-400/20 dark:bg-slate-950/70">
@@ -150,6 +219,9 @@ export default function Header() {
                 Welcome,{" "}
                 <span className="font-semibold text-slate-900 dark:text-white">
                   {meData.user?.name || "User"}
+                </span>{" "}
+                <span className="font-semibold text-blue-700 dark:text-blue-200">
+                  {accountLabel}
                 </span>
               </div>
 

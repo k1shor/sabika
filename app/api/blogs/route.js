@@ -2,9 +2,8 @@ import { NextResponse } from "next/server";
 import { DUMMY_POSTS } from "@/lib/dummy";
 import { dbConnect, isDbEnabled } from "@/lib/db";
 import { Post } from "@/models/Post";
-
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+import { requireApprovedWriter } from "@/lib/auth";
+import { PostCreateSchema } from "@/lib/validators";
 
 export async function GET() {
   if (!isDbEnabled()) {
@@ -31,4 +30,28 @@ export async function GET() {
     .lean();
 
   return NextResponse.json({ ok: true, posts });
+}
+
+export async function POST(req) {
+  const auth = await requireApprovedWriter();
+  if (!auth.ok) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: auth.error || "Unauthorized",
+        next: auth.error === "Writer approval required" ? "/apply-writer" : undefined,
+      },
+      { status: auth.error === "Unauthorized" ? 401 : 403 }
+    );
+  }
+
+  const body = await req.json();
+  const parsed = PostCreateSchema.safeParse(body);
+  if (!parsed.success) return NextResponse.json({ ok: false, error: "Invalid data" }, { status: 400 });
+
+  if (!useDb()) return NextResponse.json({ ok: false, error: "USE_DB=false" }, { status: 400 });
+
+  await dbConnect();
+  const created = await Post.create({ ...parsed.data, publishedAt: new Date() });
+  return NextResponse.json({ ok: true, post: created });
 }

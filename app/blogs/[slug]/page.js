@@ -90,7 +90,28 @@ export default async function BlogDetailsPage(props) {
   const params = await props.params;
   const slug = params?.slug;
 
-  const post = await getPost(slug);
+    const post = await getPost(slug);
+
+    if (!post) {
+        return (
+            <Container>
+                <div className="rounded-3xl border border-slate-200 bg-white/70 p-8 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25">
+                    <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                        Article not found
+                    </h1>
+                    <p className="mt-2 text-slate-600 dark:text-blue-100/75">
+                        This article may have been removed or the link is incorrect.
+                    </p>
+                    <Link
+                        href="/blogs"
+                        className="mt-6 inline-flex rounded-xl bg-linear-to-r from-blue-700 to-blue-500 px-4 py-2 text-sm font-extrabold text-white shadow-sm hover:brightness-110 active:scale-[0.98] transition"
+                    >
+                        Back to Articles
+                    </Link>
+                </div>
+            </Container>
+        );
+    }
 
   if (!post) {
     return (
