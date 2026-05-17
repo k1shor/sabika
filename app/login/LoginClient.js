@@ -78,7 +78,7 @@ export default function LoginClient() {
                 Password
               </label>
               <div className="mt-2">
-                <Input name="password" type="password" placeholder="••••••••" required />
+                <Input name="password" type="password" placeholder="Password" required />
               </div>
             </div>
 
@@ -92,13 +92,22 @@ export default function LoginClient() {
               {loading ? "Signing in..." : "Login"}
             </Button>
 
-            <div className="text-sm font-semibold text-slate-600 dark:text-blue-100/75">
-              Don’t have an account?{" "}
+            <div className="flex flex-wrap items-center justify-between gap-3 text-sm font-semibold text-slate-600 dark:text-blue-100/75">
+              <span>
+                Need an account?{" "}
+                <Link
+                  className="font-extrabold text-blue-700 hover:text-red-500 transition dark:text-blue-200 dark:hover:text-red-300"
+                  href="/register"
+                >
+                  Register
+                </Link>
+              </span>
+
               <Link
                 className="font-extrabold text-blue-700 hover:text-red-500 transition dark:text-blue-200 dark:hover:text-red-300"
-                href="/register"
+                href="/forgot-password"
               >
-                Register
+                Forgot password?
               </Link>
             </div>
           </form>

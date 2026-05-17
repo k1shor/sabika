@@ -2,56 +2,95 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { useRouter } from "next/navigation";
 import Button from "./Button";
 
-function getSystemTheme() {
-  return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
+const THEME_EVENT = "nursing-theme-change";
+const NAV_ITEMS = [
+  { href: "/", label: "Home" },
+  { href: "/about", label: "About" },
+  { href: "/blogs", label: "Articles" },
+  { href: "/faq", label: "FAQ" },
+  { href: "/contact", label: "Contact" },
+  { href: "/admin", label: "Admin" },
+];
+
+function getSavedTheme() {
+  if (typeof window === "undefined") return null;
+  const saved = window.localStorage.getItem("theme");
+  return saved === "dark" || saved === "light" ? saved : null;
 }
 
-function getInitialTheme() {
-  const saved = localStorage.getItem("theme");
-  if (saved === "dark" || saved === "light") return saved;
-  return getSystemTheme();
+function getSystemTheme() {
+  if (typeof window === "undefined" || !window.matchMedia) return "light";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+function getThemeSnapshot() {
+  return getSavedTheme() || getSystemTheme();
+}
+
+function getServerThemeSnapshot() {
+  return "light";
 }
 
 function applyTheme(mode) {
+  if (typeof document === "undefined") return;
   document.documentElement.classList.toggle("dark", mode === "dark");
+}
+
+function subscribeTheme(callback) {
+  if (typeof window === "undefined") return () => {};
+
+  const mq = window.matchMedia("(prefers-color-scheme: dark)");
+  const onThemeChange = () => callback();
+  const onSystemChange = () => {
+    if (!getSavedTheme()) callback();
+  };
+
+  window.addEventListener(THEME_EVENT, onThemeChange);
+  window.addEventListener("storage", onThemeChange);
+
+  if (mq?.addEventListener) mq.addEventListener("change", onSystemChange);
+  else if (mq?.addListener) mq.addListener(onSystemChange);
+
+  return () => {
+    window.removeEventListener(THEME_EVENT, onThemeChange);
+    window.removeEventListener("storage", onThemeChange);
+
+    if (mq?.removeEventListener) mq.removeEventListener("change", onSystemChange);
+    else if (mq?.removeListener) mq.removeListener(onSystemChange);
+  };
+}
+
+function NavLinks({ onClick }) {
+  return (
+    <>
+      {NAV_ITEMS.map((item) => (
+        <Link
+          key={item.href}
+          onClick={onClick}
+          className="hover:text-blue-600 dark:hover:text-red-300 transition"
+          href={item.href}
+        >
+          {item.label}
+        </Link>
+      ))}
+    </>
+  );
 }
 
 export default function Header() {
   const router = useRouter();
-  const pathname = usePathname();
 
   const [meData, setMeData] = useState({ ok: false, user: null });
   const [open, setOpen] = useState(false);
-  const [mode, setMode] = useState("light");
+  const mode = useSyncExternalStore(subscribeTheme, getThemeSnapshot, getServerThemeSnapshot);
 
   useEffect(() => {
-    const initial = getInitialTheme();
-    setMode(initial);
-    applyTheme(initial);
-
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const onChange = () => {
-      const saved = localStorage.getItem("theme");
-      if (saved === "dark" || saved === "light") return;
-      const next = mq.matches ? "dark" : "light";
-      setMode(next);
-      applyTheme(next);
-    };
-
-    if (mq?.addEventListener) mq.addEventListener("change", onChange);
-    else if (mq?.addListener) mq.addListener(onChange);
-
-    return () => {
-      if (mq?.removeEventListener) mq.removeEventListener("change", onChange);
-      else if (mq?.removeListener) mq.removeListener(onChange);
-    };
-  }, []);
+    applyTheme(mode);
+  }, [mode]);
 
   useEffect(() => {
     fetch("/api/auth/me", { cache: "no-store" })
@@ -60,15 +99,11 @@ export default function Header() {
       .catch(() => setMeData({ ok: false, user: null }));
   }, []);
 
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
-
   const toggleTheme = () => {
     const next = mode === "dark" ? "light" : "dark";
-    setMode(next);
+    window.localStorage.setItem("theme", next);
     applyTheme(next);
-    localStorage.setItem("theme", next);
+    window.dispatchEvent(new Event(THEME_EVENT));
   };
 
   const logout = async () => {
@@ -80,53 +115,6 @@ export default function Header() {
   };
 
   const isDark = mode === "dark";
-
-  const Nav = ({ onClick }) => (
-    <>
-      <Link
-        onClick={onClick}
-        className="hover:text-blue-600 dark:hover:text-red-300 transition"
-        href="/"
-      >
-        Home
-      </Link>
-      <Link
-        onClick={onClick}
-        className="hover:text-blue-600 dark:hover:text-red-300 transition"
-        href="/about"
-      >
-        About
-      </Link>
-      <Link
-        onClick={onClick}
-        className="hover:text-blue-600 dark:hover:text-red-300 transition"
-        href="/blogs"
-      >
-        Articles
-      </Link>
-      <Link
-        onClick={onClick}
-        className="hover:text-blue-600 dark:hover:text-red-300 transition"
-        href="/faq"
-      >
-        FAQ
-      </Link>
-      <Link
-        onClick={onClick}
-        className="hover:text-blue-600 dark:hover:text-red-300 transition"
-        href="/contact"
-      >
-        Contact
-      </Link>
-      <Link
-        onClick={onClick}
-        className="hover:text-blue-600 dark:hover:text-red-300 transition"
-        href="/admin"
-      >
-        Admin
-      </Link>
-    </>
-  );
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200/70 bg-white/70 backdrop-blur dark:border-blue-400/20 dark:bg-slate-950/70">
@@ -143,7 +131,7 @@ export default function Header() {
         </Link>
 
         <nav className="hidden md:flex items-center gap-5 text-sm font-semibold text-slate-700 dark:text-blue-100/85">
-          <Nav />
+          <NavLinks />
         </nav>
 
         <div className="hidden md:flex items-center gap-2">
@@ -153,7 +141,7 @@ export default function Header() {
             dark:border-blue-400/20 dark:bg-blue-950/40 dark:text-blue-100 dark:hover:bg-blue-950/55
             dark:hover:shadow-[0_10px_30px_rgba(37,99,235,0.18)]"
           >
-            {isDark ? "☀ Light" : "🌙 Dark"}
+            {isDark ? "Light" : "Dark"}
           </button>
 
           {meData?.ok && meData?.user ? (
@@ -198,7 +186,7 @@ export default function Header() {
       {open && (
         <div className="md:hidden border-t border-slate-200/70 bg-white/80 backdrop-blur dark:border-blue-400/20 dark:bg-slate-950/80">
           <div className="mx-auto max-w-6xl px-4 py-4 flex flex-col gap-3 text-sm font-semibold text-slate-700 dark:text-blue-100/85">
-            <Nav onClick={() => setOpen(false)} />
+            <NavLinks onClick={() => setOpen(false)} />
 
             <div className="pt-3 border-t border-slate-200/70 dark:border-blue-400/20 flex items-center justify-between gap-3">
               <button
@@ -207,7 +195,7 @@ export default function Header() {
                 dark:border-blue-400/20 dark:bg-blue-950/40 dark:text-blue-100 dark:hover:bg-blue-950/55
                 dark:hover:shadow-[0_10px_30px_rgba(37,99,235,0.18)]"
               >
-                {isDark ? "☀ Light" : "🌙 Dark"}
+                {isDark ? "Light" : "Dark"}
               </button>
 
               {meData?.ok && meData?.user ? (

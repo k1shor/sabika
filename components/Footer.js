@@ -1,8 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import Container from "./Container";
 import { useState } from "react";
+import Container from "./Container";
 
 export default function Footer() {
   const [email, setEmail] = useState("");
@@ -36,14 +37,19 @@ export default function Footer() {
         <div className="grid gap-10 md:grid-cols-3">
           <div>
             <div className="flex items-center gap-2">
-              {/* <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-blue-600 to-red-500 shadow-sm" /> */}
-              <img src="./logo-horizontal.png" className="h-40"/>
+              <Image
+                src="/logo-horizontal.png"
+                alt="Nursing Nepal"
+                width={220}
+                height={120}
+                className="h-40 w-auto object-contain"
+              />
               <div className="leading-tight">
                 <div className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">
                   Nursing Nepal
                 </div>
                 <div className="text-xs font-semibold text-slate-500 dark:text-blue-100/70">
-                  Care • Education • Guidance
+                  Care / Education / Guidance
                 </div>
               </div>
             </div>
@@ -134,11 +140,12 @@ export default function Footer() {
 
         <div className="mt-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-t border-slate-200 pt-6 dark:border-blue-400/20">
           <div className="text-sm text-slate-500 dark:text-blue-100/70">
-            © {new Date().getFullYear()} <span className="font-semibold">Nursing Nepal</span>. All rights reserved.
+            Copyright {new Date().getFullYear()}{" "}
+            <span className="font-semibold">Nursing Nepal</span>. All rights reserved.
           </div>
 
           <div className="text-sm text-slate-500 dark:text-blue-100/70">
-            Designed with <span className="text-red-500">❤</span> for healthcare learning.
+            Designed for healthcare learning.
           </div>
         </div>
       </Container>

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Container from "@/components/Container";
 import AdminPostsPanel from "./posts/AdminPostsPanel";
+import AdminUsersPanel from "./users/AdminUsersPanel";
 import { requireAdmin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -23,11 +24,11 @@ export default async function AdminPage() {
             </div>
 
             <h1 className="mt-3 text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-              Blog Management
+              Admin Dashboard
             </h1>
 
             <p className="mt-2 text-slate-600 dark:text-blue-100/75">
-              Manage Nursing Nepal articles (Create / Delete). Next we can add Edit.
+              Manage Nursing Nepal articles and account roles.
             </p>
           </div>
 
@@ -41,6 +42,10 @@ export default async function AdminPage() {
 
         <div className="mt-6">
           <AdminPostsPanel />
+        </div>
+
+        <div className="mt-6">
+          <AdminUsersPanel />
         </div>
       </div>
     </Container>

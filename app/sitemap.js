@@ -1,5 +1,5 @@
 import { DUMMY_POSTS } from "@/lib/dummy";
-import { dbConnect, useDb } from "@/lib/db";
+import { dbConnect, isDbEnabled } from "@/lib/db";
 import { Post } from "@/models/Post";
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/+$/, "");
@@ -25,7 +25,7 @@ export default async function sitemap() {
 
   let blogEntries = [];
 
-  if (!useDb()) {
+  if (!isDbEnabled()) {
     blogEntries = (DUMMY_POSTS || []).map((p) => ({
       url: `${siteUrl}/blogs/${encodeURIComponent(p.slug)}`,
       lastModified: toIsoDate(p.publishedAt || now),

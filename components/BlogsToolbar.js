@@ -82,7 +82,7 @@ export default function BlogsToolbar({ posts = [], tags = [] }) {
         >
           <option value="latest">Sort: Latest</option>
           <option value="oldest">Sort: Oldest</option>
-          <option value="az">Sort: A → Z</option>
+          <option value="az">Sort: A-Z</option>
         </select>
       </div>
 

@@ -9,8 +9,10 @@ export default function robots() {
         disallow: [
           "/admin",
           "/api",
+          "/forgot-password",
           "/login",
           "/register",
+          "/reset-password",
         ],
       },
     ],

@@ -34,7 +34,7 @@ export default function RegisterPage() {
     setLoading(false);
 
     if (data?.ok) {
-      setOk("Registered successfully. Now login.");
+      setOk("Registered successfully. Your account was created as a user.");
       e.target.reset();
     } else {
       setErr(data?.error || "Registration failed");
@@ -43,40 +43,44 @@ export default function RegisterPage() {
 
   return (
     <Container>
-      <div className="mx-auto max-w-md rounded-3xl border border-slate-200 bg-white/70 p-8 shadow-sm">
-        <h1 className="text-3xl font-extrabold tracking-tight">Register</h1>
-        <p className="mt-2 text-slate-600 text-sm">Create your admin account.</p>
+      <div className="mx-auto max-w-md rounded-3xl border border-slate-200 bg-white/70 p-8 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25">
+        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+          Register
+        </h1>
+        <p className="mt-2 text-slate-600 text-sm dark:text-blue-100/75">
+          Create your Nursing Nepal account.
+        </p>
 
         <form onSubmit={submit} className="mt-6 grid gap-4">
           <div>
-            <label className="text-sm font-semibold text-slate-700">Name</label>
+            <label className="text-sm font-semibold text-slate-700 dark:text-blue-100/80">Name</label>
             <div className="mt-2">
               <Input name="name" placeholder="Your name" required />
             </div>
           </div>
 
           <div>
-            <label className="text-sm font-semibold text-slate-700">Email</label>
+            <label className="text-sm font-semibold text-slate-700 dark:text-blue-100/80">Email</label>
             <div className="mt-2">
               <Input name="email" type="email" placeholder="you@example.com" required />
             </div>
           </div>
 
           <div>
-            <label className="text-sm font-semibold text-slate-700">Password</label>
+            <label className="text-sm font-semibold text-slate-700 dark:text-blue-100/80">Password</label>
             <div className="mt-2">
               <Input name="password" type="password" placeholder="Minimum 6 chars" required />
             </div>
           </div>
 
           {err && (
-            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-400/25 dark:bg-red-950/30 dark:text-red-200">
               {err}
             </div>
           )}
 
           {ok && (
-            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700">
+            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-blue-100/80">
               {ok}
             </div>
           )}
@@ -85,9 +89,9 @@ export default function RegisterPage() {
             {loading ? "Creating..." : "Create Account"}
           </Button>
 
-          <div className="text-sm text-slate-600">
+          <div className="text-sm text-slate-600 dark:text-blue-100/75">
             Already have an account?{" "}
-            <Link className="font-semibold text-blue-700 hover:underline" href="/login">
+            <Link className="font-semibold text-blue-700 hover:underline dark:text-blue-200" href="/login">
               Login
             </Link>
           </div>

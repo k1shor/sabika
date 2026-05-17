@@ -1,15 +1,37 @@
 "use client";
 
-import { useEffect, useState } from "react";
+/* eslint-disable @next/next/no-img-element */
+import { useEffect, useRef, useState } from "react";
 import Button from "@/components/Button";
 import Input from "@/components/Input";
 import TextArea from "@/components/TextArea";
+import RichTextEditor from "@/components/RichTextEditor";
+
+async function uploadFile(file) {
+  const form = new FormData();
+  form.append("file", file);
+
+  const res = await fetch("/api/upload", {
+    method: "POST",
+    body: form,
+  });
+
+  const data = await res.json().catch(() => null);
+  if (!data?.ok) return null;
+  return data.url;
+}
 
 export default function AdminPostsPanel() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
+
+  const [coverImage, setCoverImage] = useState("");
+  const [contentHtml, setContentHtml] = useState("");
+
+  const coverRef = useRef(null);
+  const inlineRef = useRef(null);
 
   const load = async () => {
     setLoading(true);
@@ -30,8 +52,65 @@ export default function AdminPostsPanel() {
   };
 
   useEffect(() => {
+    // Initial data sync from the admin API.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, []);
+
+  const pickCover = () => coverRef.current?.click();
+  const pickInline = () => inlineRef.current?.click();
+
+  const onCoverChange = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setBusy(true);
+    setMsg(null);
+
+    const url = await uploadFile(file);
+
+    setBusy(false);
+
+    if (!url) {
+      setMsg("Cover upload failed. Check Cloudinary env vars and try again.");
+      return;
+    }
+
+    setCoverImage(url);
+  };
+
+  const onUploadInline = async () => {
+    return new Promise((resolve) => {
+      const el = inlineRef.current;
+      if (!el) return resolve(null);
+
+      const handler = async () => {
+        const file = el.files?.[0];
+        el.value = "";
+        el.removeEventListener("change", handler);
+
+        if (!file) return resolve(null);
+
+        setBusy(true);
+        setMsg(null);
+
+        const url = await uploadFile(file);
+
+        setBusy(false);
+
+        if (!url) {
+          setMsg("Image upload failed. Check Cloudinary env vars.");
+          return resolve(null);
+        }
+
+        resolve(url);
+      };
+
+      el.addEventListener("change", handler);
+      el.click();
+    });
+  };
 
   const createPost = async (e) => {
     e.preventDefault();
@@ -43,14 +122,17 @@ export default function AdminPostsPanel() {
     const payload = {
       title: String(form.get("title") || ""),
       excerpt: String(form.get("excerpt") || ""),
-      content: String(form.get("content") || ""),
       tags: String(form.get("tags") || "")
         .split(",")
         .map((t) => t.trim())
         .filter(Boolean),
       author: String(form.get("author") || "Nursing Nepal"),
       readTime: String(form.get("readTime") || "5 min read"),
+      images: [],
     };
+
+    if (coverImage) payload.coverImage = coverImage;
+    if (contentHtml) payload.contentHtml = contentHtml;
 
     const res = await fetch("/api/admin/posts", {
       method: "POST",
@@ -67,8 +149,10 @@ export default function AdminPostsPanel() {
     }
 
     e.target.reset();
+    setCoverImage("");
+    setContentHtml("");
     await load();
-    setMsg("✅ Post created successfully.");
+    setMsg("Article created successfully.");
   };
 
   const deletePost = async (id) => {
@@ -77,11 +161,9 @@ export default function AdminPostsPanel() {
     setBusy(true);
     setMsg(null);
 
-    const res = await fetch(`/api/admin/posts/${id}`, {
-      method: "DELETE",
-    });
-
+    const res = await fetch(`/api/admin/posts/${id}`, { method: "DELETE" });
     const data = await res.json().catch(() => null);
+
     setBusy(false);
 
     if (!data?.ok) {
@@ -90,7 +172,7 @@ export default function AdminPostsPanel() {
     }
 
     await load();
-    setMsg("✅ Post deleted.");
+    setMsg("Article deleted.");
   };
 
   return (
@@ -99,6 +181,9 @@ export default function AdminPostsPanel() {
         <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
           Create New Article
         </h2>
+
+        <input ref={coverRef} type="file" accept="image/*" className="hidden" onChange={onCoverChange} />
+        <input ref={inlineRef} type="file" accept="image/*" className="hidden" />
 
         <form onSubmit={createPost} className="mt-5 grid gap-4">
           <div>
@@ -116,15 +201,6 @@ export default function AdminPostsPanel() {
             </label>
             <div className="mt-2">
               <TextArea name="excerpt" placeholder="Short summary..." required />
-            </div>
-          </div>
-
-          <div>
-            <label className="text-sm font-semibold text-slate-700 dark:text-blue-100/80">
-              Content
-            </label>
-            <div className="mt-2">
-              <TextArea name="content" placeholder="Full article content..." required rows={8} />
             </div>
           </div>
 
@@ -157,6 +233,54 @@ export default function AdminPostsPanel() {
             </div>
           </div>
 
+          <div className="rounded-3xl border border-slate-200 bg-white/70 p-5 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="text-sm font-extrabold text-slate-900 dark:text-white">
+                  Cover Image
+                </div>
+                <div className="mt-1 text-xs font-semibold text-slate-600 dark:text-blue-100/70">
+                  Upload a banner/cover image for this blog.
+                </div>
+              </div>
+
+              <Button type="button" disabled={busy} onClick={pickCover}>
+                {busy ? "Uploading..." : "Upload Cover"}
+              </Button>
+            </div>
+
+            {coverImage ? (
+              <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 dark:border-blue-400/20">
+                <img src={coverImage} alt="Cover" className="h-44 w-full object-cover" />
+              </div>
+            ) : null}
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-sm font-extrabold text-slate-900 dark:text-white">
+                Content (Rich Text)
+              </div>
+
+              <button
+                type="button"
+                onClick={pickInline}
+                className="rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm font-extrabold text-slate-800 hover:bg-white transition
+                dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-blue-100 dark:hover:bg-blue-950/45"
+              >
+                Choose Image
+              </button>
+            </div>
+
+            <div className="mt-2">
+              <RichTextEditor
+                value={contentHtml}
+                onChange={setContentHtml}
+                onUploadImage={onUploadInline}
+              />
+            </div>
+          </div>
+
           {msg && (
             <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm font-semibold text-slate-700 dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-blue-100/80">
               {msg}
@@ -174,7 +298,6 @@ export default function AdminPostsPanel() {
           <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
             Articles
           </h2>
-
           <Button type="button" disabled={loading || busy} onClick={load}>
             Refresh
           </Button>
@@ -196,11 +319,11 @@ export default function AdminPostsPanel() {
                 className="rounded-2xl border border-slate-200 bg-white/80 p-4 dark:border-blue-400/20 dark:bg-blue-950/30"
               >
                 <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="text-sm font-extrabold text-slate-900 dark:text-white">
+                  <div className="min-w-0">
+                    <div className="text-sm font-extrabold text-slate-900 dark:text-white truncate">
                       {p.title}
                     </div>
-                    <div className="mt-1 text-xs font-semibold text-slate-600 dark:text-blue-100/70">
+                    <div className="mt-1 text-xs font-semibold text-slate-600 dark:text-blue-100/70 truncate">
                       /blogs/{p.slug}
                     </div>
                   </div>
@@ -215,14 +338,16 @@ export default function AdminPostsPanel() {
                     Delete
                   </button>
                 </div>
+
+                {p.coverImage ? (
+                  <div className="mt-3 overflow-hidden rounded-2xl border border-slate-200 dark:border-blue-400/20">
+                    <img src={p.coverImage} alt="" className="h-28 w-full object-cover" />
+                  </div>
+                ) : null}
               </div>
             ))}
           </div>
         )}
-
-        <div className="mt-6 text-xs font-semibold text-slate-500 dark:text-blue-100/60">
-          Only admins can create/delete posts.
-        </div>
       </div>
     </div>
   );

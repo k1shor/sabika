@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-import { dbConnect, useDb } from "@/lib/db";
+import { dbConnect, isDbEnabled } from "@/lib/db";
 import { User } from "@/models/User";
 import { signToken, setAuthCookie } from "@/lib/auth";
 
@@ -13,6 +13,10 @@ const RegisterSchema = z.object({
   email: z.string().email().max(200),
   password: z.string().min(6).max(200),
 });
+
+function isDemoAuthEnabled() {
+  return String(process.env.DEMO_AUTH).toLowerCase() === "true";
+}
 
 export async function POST(req) {
   const body = await req.json().catch(() => null);
@@ -26,7 +30,11 @@ export async function POST(req) {
   const email = parsed.data.email.trim().toLowerCase();
   const password = parsed.data.password;
 
-  if (!useDb()) {
+  if (!isDbEnabled()) {
+    if (!isDemoAuthEnabled()) {
+      return NextResponse.json({ ok: false, error: "Authentication database is disabled" }, { status: 503 });
+    }
+
     const token = signToken({ sub: "demo-user", name, email, role: "user" });
     await setAuthCookie(token);
     return NextResponse.json({ ok: true, user: { name, email, role: "user" } });

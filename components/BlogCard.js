@@ -1,5 +1,11 @@
 import Link from "next/link";
 
+function formatDate(value) {
+  const date = new Date(value || 0);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString();
+}
+
 export default function BlogCard({ post }) {
   return (
     <Link
@@ -8,7 +14,7 @@ export default function BlogCard({ post }) {
     >
       <div className="flex items-center justify-between gap-4">
         <div className="text-xs font-semibold text-slate-500">
-          {new Date(post.publishedAt).toLocaleDateString()}
+          {formatDate(post.publishedAt || post.createdAt)}
         </div>
         <div className="flex flex-wrap gap-2">
           {(post.tags || []).slice(0, 3).map((t) => (
@@ -28,7 +34,7 @@ export default function BlogCard({ post }) {
       <div className="mt-2 text-sm text-slate-600 leading-relaxed">{post.excerpt}</div>
 
       <div className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-blue-700">
-        Read more <span className="transition group-hover:translate-x-1">→</span>
+        Read more <span className="transition group-hover:translate-x-1">-&gt;</span>
       </div>
     </Link>
   );
