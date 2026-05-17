@@ -97,7 +97,7 @@ export default function Header() {
       .then((r) => r.json())
       .then((d) => setMeData(d?.ok ? d : { ok: false, user: null }))
       .catch(() => setMeData({ ok: false, user: null }));
-  }, [pathname]);
+  }, []);
 
   const toggleTheme = () => {
     const next = mode === "dark" ? "light" : "dark";
