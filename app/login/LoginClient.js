@@ -13,8 +13,9 @@ export default function LoginClient() {
 
   const nextUrl = useMemo(() => {
     const n = sp.get("next");
-    return n && n.startsWith("/") ? n : "/";
+    return n && n.startsWith("/") ? n : "/dashboard"; // default to profile
   }, [sp]);
+
 
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState(null);

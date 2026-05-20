@@ -15,7 +15,7 @@ export default function AdminUsersPanel() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
   const [msg, setMsg] = useState(null);
-
+ 
   const load = async () => {
     setLoading(true);
     setMsg(null);
@@ -61,7 +61,7 @@ export default function AdminUsersPanel() {
     }
 
     setUsers((list) => list.map((user) => (user._id === id ? data.user : user)));
-    setMsg(role === "admin" ? "User promoted to admin." : "Admin demoted to user.");
+    setMsg(role === "admin" ? "User promoted to admin." : "Admin demoted to visitor.");
   };
 
   return (
@@ -101,7 +101,7 @@ export default function AdminUsersPanel() {
             {users.map((user) => {
               const isCurrentUser = user._id === currentUserId;
               const isBusy = busyId === user._id;
-              const nextRole = user.role === "admin" ? "user" : "admin";
+              const nextRole = user.role === "admin" ? "visitor" : "admin";
 
               return (
                 <div
@@ -139,7 +139,7 @@ export default function AdminUsersPanel() {
 
                   <button
                     type="button"
-                    disabled={isBusy || (isCurrentUser && nextRole === "user")}
+                    disabled={isBusy || (isCurrentUser && nextRole === "visitor")}
                     onClick={() => updateRole(user._id, nextRole)}
                     className={`rounded-xl border px-3 py-2 text-xs font-extrabold transition disabled:cursor-not-allowed disabled:opacity-60 ${
                       user.role === "admin"
@@ -150,7 +150,7 @@ export default function AdminUsersPanel() {
                     {isBusy
                       ? "Saving..."
                       : user.role === "admin"
-                        ? "Demote to User"
+                        ? "Demote to Visitor"
                         : "Promote to Admin"}
                   </button>
                 </div>
@@ -162,3 +162,13 @@ export default function AdminUsersPanel() {
     </div>
   );
 }
+// const roles = ["visitor", "blog_writer", "admin"];
+// <select
+//   value={user.role}
+//   onChange={(e) => updateRole(user._id, e.target.value)}
+//   disabled={isBusy}
+// >
+//   <option value="visitor">Visitor</option>
+//   <option value="blog_writer">Blog Writer</option>
+//   <option value="admin">Admin</option>
+// </select>

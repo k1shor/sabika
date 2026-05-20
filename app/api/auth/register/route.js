@@ -69,51 +69,52 @@ export async function POST(req) {
       ok: true,
       message: "Registered successfully. Check your email to verify account.",
     });
-  } catch {
+  } catch (error) {
+    console.error("REGISTRATION ERROR:", error);
+  
     return NextResponse.json(
       {
         ok: false,
-        error: "Registration failed",
+        error: error.message || "Registration failed",
       },
       { status: 500 }
     );
-  }
+  }}
 
-  const name = parsed.data.name.trim();
-  const email = parsed.data.email.trim().toLowerCase();
-  const password = parsed.data.password;
+//   const name = parsed.data.name.trim();
+//   const email = parsed.data.email.trim().toLowerCase();
+//   const password = parsed.data.password;
 
-  if (!isDbEnabled()) {
-    if (!isDemoAuthEnabled()) {
-      return NextResponse.json({ ok: false, error: "Authentication database is disabled" }, { status: 503 });
-    }
+//   if (!isDbEnabled()) {
+//     if (!isDemoAuthEnabled()) {
+//       return NextResponse.json({ ok: false, error: "Authentication database is disabled" }, { status: 503 });
+//     }
 
-    const token = signToken({ sub: "demo-user", name, email, role: "user" });
-    await setAuthCookie(token);
-    return NextResponse.json({ ok: true, user: { name, email, role: "user" } });
-  }
+//     const token = signToken({ sub: "demo-user", name, email, role: "user" });
+//     await setAuthCookie(token);
+//     return NextResponse.json({ ok: true, user: { name, email, role: "user" } });
+//   }
 
-  await dbConnect();
+//   await dbConnect();
 
-  const exists = await User.findOne({ email }).lean();
-  if (exists) {
-    return NextResponse.json({ ok: false, error: "Email already registered" }, { status: 409 });
-  }
+//   const exists = await User.findOne({ email }).lean();
+//   if (exists) {
+//     return NextResponse.json({ ok: false, error: "Email already registered" }, { status: 409 });
+//   }
 
-  const passwordHash = await bcrypt.hash(password, 10);
+//   const passwordHash = await bcrypt.hash(password, 10);
 
-  const user = await User.create({
-    name,
-    email,
-    passwordHash,
-    role: "user",
-  });
+//   const user = await User.create({
+//     name,
+//     email,
+//     passwordHash,
+//     role: "user",
+//   });
 
-  const token = signToken({ sub: String(user._id), name: user.name, email: user.email, role: user.role });
-  await setAuthCookie(token);
+//   const token = signToken({ sub: String(user._id), name: user.name, email: user.email, role: user.role });
+//   await setAuthCookie(token);
 
-  return NextResponse.json({
-    ok: true,
-    user: { name: user.name, email: user.email, role: user.role },
-  });
-}
+//   return NextResponse.json({
+//     ok: true,
+//     user: { name: user.name, email: user.email, role: user.role },
+//   });

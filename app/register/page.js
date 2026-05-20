@@ -51,12 +51,26 @@ export default function RegisterPage() {
         <p className="mt-2 text-slate-600 text-sm">Create your account.</p>
 
         <form onSubmit={submit} className="mt-6 grid gap-4">
-          <div>
-            <label className="text-sm font-semibold text-slate-700 dark:text-blue-100/80">Name</label>
-            <div className="mt-2">
-              <Input name="name" placeholder="Your name" required />
-            </div>
-          </div>
+        <div>
+  <label className="text-sm font-semibold text-slate-700 dark:text-blue-100/80">Name</label>
+  <div className="mt-2">
+    <Input
+      name="name"
+      placeholder="Your full name (e.g. John Doe)"
+      required
+      onBlur={(e) => {
+        const parts = e.target.value.trim().split(/\s+/);
+        if (parts.length < 2 || parts[1] === "") {
+          e.target.setCustomValidity("Please enter your full name (first and last name)");
+          e.target.reportValidity();
+        } else {
+          e.target.setCustomValidity("");
+        }
+      }}
+      onChange={(e) => e.target.setCustomValidity("")}
+    />
+  </div>
+</div>
 
           <div>
             <label className="text-sm font-semibold text-slate-700 dark:text-blue-100/80">Email</label>

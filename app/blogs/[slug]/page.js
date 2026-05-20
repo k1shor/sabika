@@ -12,7 +12,6 @@ export async function generateMetadata(props) {
   const params = await props.params;
   const slug = params?.slug;
   const s = decodeURIComponent(String(slug || "")).trim();
-
   const titleGuess = s ? s.replace(/-/g, " ") : "Nursing Article";
 
   return {
@@ -48,20 +47,18 @@ function formatDate(value) {
 
 function findDummy(slug) {
   const s = normalizeSlug(slug);
-  return (Array.isArray(DUMMY_POSTS) ? DUMMY_POSTS : []).find((p) => normalizeSlug(p?.slug) === s);
+  return (Array.isArray(DUMMY_POSTS) ? DUMMY_POSTS : []).find(
+    (p) => normalizeSlug(p?.slug) === s
+  );
 }
 
 async function findDbPost(slug) {
   const s = normalizeSlug(slug);
-
   const { dbConnect } = await import("@/lib/db");
   const { Post } = await import("@/models/Post");
-
   await dbConnect();
-
   const post = await Post.findOne({ slug: s }).lean();
   if (!post) return null;
-
   return {
     ...post,
     _id: post._id ? String(post._id) : undefined,
@@ -73,45 +70,17 @@ async function findDbPost(slug) {
 
 async function getPost(slug) {
   if (!slug) return null;
-
-  if (!isDbEnabled()) {
-    return findDummy(slug) || null;
-  }
-
+  if (!isDbEnabled()) return findDummy(slug) || null;
   try {
     const dbPost = await findDbPost(slug);
     if (dbPost) return dbPost;
   } catch (_e) {}
-
   return findDummy(slug) || null;
 }
 
 export default async function BlogDetailsPage(props) {
   const params = await props.params;
-  const slug = params?.slug;
-
-    const post = await getPost(slug);
-
-    if (!post) {
-        return (
-            <Container>
-                <div className="rounded-3xl border border-slate-200 bg-white/70 p-8 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25">
-                    <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-                        Article not found
-                    </h1>
-                    <p className="mt-2 text-slate-600 dark:text-blue-100/75">
-                        This article may have been removed or the link is incorrect.
-                    </p>
-                    <Link
-                        href="/blogs"
-                        className="mt-6 inline-flex rounded-xl bg-linear-to-r from-blue-700 to-blue-500 px-4 py-2 text-sm font-extrabold text-white shadow-sm hover:brightness-110 active:scale-[0.98] transition"
-                    >
-                        Back to Articles
-                    </Link>
-                </div>
-            </Container>
-        );
-    }
+  const post = await getPost(params?.slug);
 
   if (!post) {
     return (
@@ -123,10 +92,11 @@ export default async function BlogDetailsPage(props) {
           <p className="mt-2 text-slate-600 dark:text-blue-100/75">
             This article may have been removed or the link is incorrect.
           </p>
-
-          <Link href="/blogs" className="mt-6 inline-flex">
-            <Button>Back to Articles</Button>
-          </Link>
+          <div className="mt-6">
+            <Link href="/blogs">
+              <Button>Back to Articles</Button>
+            </Link>
+          </div>
         </div>
       </Container>
     );
@@ -136,61 +106,129 @@ export default async function BlogDetailsPage(props) {
   const published = post.publishedAt || post.createdAt;
   const updated = post.updatedAt && post.updatedAt !== post.createdAt ? post.updatedAt : null;
 
+  // anonymous post: author field is empty or explicitly "anonymous"
+  const isAnonymous =
+    !post.author || post.author.trim().toLowerCase() === "anonymous";
+
   return (
     <Container>
       <div className="rounded-3xl border border-slate-200 bg-white/70 p-7 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25">
-        <Link href="/blogs" className="inline-flex">
+
+        <Link href="/blogs">
           <Button>Back to Articles</Button>
         </Link>
 
-        {post.coverImage ? (
+        {post.coverImage && (
           <div className="mt-6 overflow-hidden rounded-3xl border border-slate-200 dark:border-blue-400/20">
-            <img src={post.coverImage} alt={post.title} className="h-60 w-full object-cover" />
+            <img
+              src={post.coverImage}
+              alt={post.title}
+              className="h-60 w-full object-cover"
+            />
           </div>
-        ) : null}
+        )}
 
         <div className="mt-6">
-          {tags.length ? (
+          {/* Category + flair tags */}
+          {tags.length > 0 && (
             <div className="flex flex-wrap items-center gap-2">
+              {post.category && (
+                <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 dark:border-blue-400/20 dark:bg-blue-950/40 dark:text-blue-300">
+                  {post.category}
+                </span>
+              )}
               {tags.map((t) => (
                 <span
                   key={t}
-                  className="rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-bold text-slate-700
-                  dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-blue-100/80"
+                  className="rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-bold text-slate-600 dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-blue-100/80"
                 >
                   {t}
                 </span>
               ))}
             </div>
-          ) : null}
+          )}
 
           <h1 className="mt-4 text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white">
             {post.title}
           </h1>
 
-          <div className="mt-3 flex flex-wrap items-center gap-3 text-sm font-semibold text-slate-500 dark:text-blue-100/60">
-            {post.author ? <span>By {post.author}</span> : null}
-            {published ? <span>|</span> : null}
-            {published ? <span>{formatDate(published)}</span> : null}
-            {post.readTime ? (
+          {/* Author + meta row */}
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            {isAnonymous ? (
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                  ?
+                </div>
+                <div className="flex flex-col leading-tight">
+                  <span className="text-sm font-semibold text-slate-700 dark:text-blue-100/80">
+                    Anonymous
+                  </span>
+                  {post.authorRole && (
+                    <span className="text-xs text-slate-500 dark:text-blue-100/50">
+                      {post.authorRole}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                  {post.author
+                    ?.trim()
+                    .split(/\s+/)
+                    .map((w) => w[0])
+                    .join("")
+                    .slice(0, 2)
+                    .toUpperCase()}
+                </div>
+                <div className="flex flex-col leading-tight">
+                  <span className="text-sm font-semibold text-slate-700 dark:text-blue-100/80">
+                    {post.author}
+                  </span>
+                  {post.authorRole && (
+                    <span className="text-xs text-slate-500 dark:text-blue-100/50">
+                      {post.authorRole}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <span className="text-slate-300 dark:text-blue-400/30">·</span>
+
+            {published && (
+              <span className="text-sm text-slate-500 dark:text-blue-100/60">
+                {formatDate(published)}
+              </span>
+            )}
+
+            {post.readTime && (
               <>
-                <span>|</span>
-                <span>{post.readTime}</span>
+                <span className="text-slate-300 dark:text-blue-400/30">·</span>
+                <span className="text-sm text-slate-500 dark:text-blue-100/60">
+                  {post.readTime}
+                </span>
               </>
-            ) : null}
-            {updated ? (
+            )}
+
+            {updated && (
               <>
-                <span>|</span>
-                <span>Updated {formatDate(updated)}</span>
+                <span className="text-slate-300 dark:text-blue-400/30">·</span>
+                <span className="text-sm text-slate-500 dark:text-blue-100/60">
+                  Updated {formatDate(updated)}
+                </span>
               </>
-            ) : null}
+            )}
           </div>
 
-          {post.excerpt ? (
-            <p className="mt-5 text-lg text-slate-700 dark:text-blue-100/80">{post.excerpt}</p>
-          ) : null}
+          {post.excerpt && (
+            <p className="mt-5 text-lg leading-relaxed text-slate-700 dark:text-blue-100/80">
+              {post.excerpt}
+            </p>
+          )}
         </div>
 
+        {/* Article body */}
         <div className="mt-7 border-t border-slate-200 pt-6 dark:border-blue-400/20">
           {post.contentHtml ? (
             <article
@@ -203,6 +241,7 @@ export default async function BlogDetailsPage(props) {
             </article>
           )}
         </div>
+
       </div>
     </Container>
   );
