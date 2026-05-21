@@ -96,7 +96,7 @@ export default function ResetPasswordPage() {
             {done ? (
               <Link
                 href="/login"
-                className="inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-red-500 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 active:brightness-95"
+                className="inline-flex w-full items-center justify-center rounded-xl bg-linear-to-r from-blue-600 to-red-500 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 active:brightness-95"
               >
                 Go to Login
               </Link>

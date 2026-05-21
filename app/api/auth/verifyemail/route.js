@@ -33,6 +33,12 @@ export async function POST(req) {
         { status: 400 }
       );
     }
+    if (user.isVerified) {
+      return NextResponse.json({
+        ok: true,
+        message: "Your email is already verified. You can login now.",
+      });
+    }
 
     user.isVerified = true;
     user.verifyToken = undefined;
