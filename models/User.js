@@ -4,10 +4,12 @@ const UserSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true, maxlength: 80 },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true, maxlength: 200 },
-    passwordHash: { type: String, required: true },
+    // FIXED — not required for Google OAuth users
+    passwordHash: { type: String, default: "" },
+    provider: { type: String, enum: ["credentials", "google"], default: "credentials" },
     role: { type: String, enum: ["visitor", "blog_writer", "admin"], default: "visitor" },
-    isVerified: {type: Boolean,default: false},
-    isAdmin:{type: Boolean,default: false},
+    isVerified: { type: Boolean, default: false },
+    isAdmin: { type: Boolean, default: false },
     writerVerification: {
       status: {
         type: String,
@@ -32,10 +34,10 @@ const UserSchema = new mongoose.Schema(
       reviewedAt: Date,
       rejectionReason: { type: String, trim: true, maxlength: 500 },
     },
-    forgotPasswordToken:String,
-    forgotPasswordTokenExpiry:Date,
-    verifyToken:String,
-    verifyTokenExpiry:Date
+    forgotPasswordToken: String,
+    forgotPasswordTokenExpiry: Date,
+    verifyToken: String,
+    verifyTokenExpiry: Date
 
   },
 
