@@ -23,7 +23,7 @@ export async function POST(req) {
     await dbConnect();
 
     const user = await User.findOne({
-      verifyToken: { $in: [hashedToken, token] },
+      verifyToken: hashedToken,
       verifyTokenExpiry: { $gt: Date.now() },
     });
 

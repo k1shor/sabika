@@ -58,8 +58,9 @@ const RegisterSchema = z.object({
 
   // Optional — set to true when registering via Google OAuth
   isOAuth: z.boolean().optional().default(false),
-});
+  role: z.enum(["visitor", "blog_writer"]).default("visitor"),
 
+});
 // ─── 2. Format Zod errors into field-specific object ─────────────────────────
 // Turns Zod's flat error array into { name: "...", email: "...", password: "..." }
 // so the frontend can map errors directly to each input field.
@@ -109,7 +110,7 @@ export async function POST(req) {
     );
   }
 
-  const { name, email, password, isOAuth } = parsed.data;
+  const { name, email, password, isOAuth,role } = parsed.data;
   const normalizedEmail = email.trim().toLowerCase();
 
   // ── 3c. Database check ──────────────────────────────────────────────────────
@@ -179,12 +180,13 @@ export async function POST(req) {
   let newUser;
   try {
     newUser = await User.create({
-      name:         name.trim(),
-      email:        normalizedEmail,
+      name,
+      email:normalizedEmail,
       passwordHash,
-      role:         "visitor",        // default role
-      isVerified:   isOAuth ?? false, // Google OAuth = already verified
-      provider:     isOAuth ? "google" : "credentials",
+      role,
+      provider: "credentials",
+      isVerified: false,
+      writerVerification: { status: "none" },
     });
   } catch (err) {
     console.error("User creation failed:", err.message, err.stack);

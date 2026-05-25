@@ -5,73 +5,58 @@ import { dbConnect } from "@/lib/db";
 import { User } from "@/models/User";
 import { signToken } from "@/lib/auth";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-
-const VALID_ROLES = ["visitor", "blog_writer"];
+const PUBLIC_ROLES = ["visitor", "blog_writer"];
 
 export async function GET(req) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const requestedRole    = searchParams.get("role");
-    const role             = VALID_ROLES.includes(requestedRole) ? requestedRole : "visitor";
+  const { searchParams } = new URL(req.url);
+  const requestedRole = searchParams.get("role");
+  const role = PUBLIC_ROLES.includes(requestedRole) ? requestedRole : "visitor";
 
-    console.log("google-session: requested role:", role);
+  const session = await getServerSession(authOptions);
 
-    // 1. Get NextAuth session
-    const session = await getServerSession(authOptions);
-    console.log("google-session: session:", session?.user?.email);
+  if (!session?.user?.email) {
+    return NextResponse.redirect(new URL("/login?error=google", req.url));
+  }
 
-    if (!session?.user?.email) {
-      console.error("google-session: no session found");
-      return NextResponse.redirect(new URL("/login?error=google", req.url));
-    }
+  await dbConnect();
 
-    // 2. Find or create user
-    await dbConnect();
-    let dbUser = await User.findOne({ email: session.user.email });
-    console.log("google-session: dbUser found:", !!dbUser);
+  const email = session.user.email.toLowerCase();
+  let user = await User.findOne({ email });
 
-    if (!dbUser) {
-      dbUser = await User.create({
-        name:         session.user.name,
-        email:        session.user.email,
-        passwordHash: "",
-        role,
-        isVerified:   true,
-        provider:     "google",
-      });
-      console.log("google-session: created new user with role:", role);
-    } else {
-      console.log("google-session: existing user role:", dbUser.role);
-    }
+  if (!user) {
+    user = await User.create({
+      name: session.user.name || "Google User",
+      email,
+      passwordHash: "",
+      provider: "google",
+      role,
+      isVerified: true,
+      writerVerification: { status: "none" },
+    });
+  }
 
-    // 3. Sign JWT
-    const finalRole = VALID_ROLES.includes(dbUser.role) || dbUser.role === "admin"
-      ? dbUser.role
+  const finalRole = user.isAdmin
+    ? "admin"
+    : ["visitor", "blog_writer", "admin"].includes(user.role)
+      ? user.role
       : "visitor";
 
-    const token = signToken({
-      id:    dbUser._id,
-      name:  dbUser.name,
-      email: dbUser.email,
-      role:  finalRole,
-    });
+  const token = signToken({
+    id: user._id,
+    name: user.name,
+    email: user.email,
+    role: finalRole,
+  });
 
-    // 4. Set cookie + redirect
-    const response = NextResponse.redirect(new URL("/dashboard", req.url));
-    response.cookies.set("token", token, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure:   process.env.NODE_ENV === "production",
-      path:     "/",
-      maxAge:   60 * 60 * 24,
-    });
+  const res = NextResponse.redirect(new URL("/dashboard", req.url));
 
-    return response;
+  res.cookies.set("token", token, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 24,
+  });
 
-  } catch (err) {
-    console.error("google-session ERROR:", err.message, err.stack);
-    return NextResponse.redirect(new URL("/login?error=server", req.url));
-  }
+  return res;
 }

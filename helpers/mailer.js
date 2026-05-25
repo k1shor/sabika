@@ -2,31 +2,26 @@ import nodemailer from "nodemailer";
 import crypto from "crypto";
 import { User } from "@/models/User";
 
-export const sendEmail = async ({
-  email,
-  emailType,
-  userId,
-}) => {
+export const sendEmail = async ({ email, emailType, userId, token }) => {
   try {
-    const token = crypto.randomBytes(32).toString("hex");
+    const rawToken = token || crypto.randomBytes(32).toString("hex");
+
     const hashedToken = crypto
       .createHash("sha256")
-      .update(token)
+      .update(rawToken)
       .digest("hex");
 
-    // VERIFY EMAIL
     if (emailType === "VERIFY") {
       await User.findByIdAndUpdate(userId, {
         verifyToken: hashedToken,
-        verifyTokenExpiry: Date.now() + 3600000,
+        verifyTokenExpiry: Date.now() + 60 * 60 * 1000,
       });
     }
 
-    // RESET PASSWORD
     if (emailType === "RESET") {
       await User.findByIdAndUpdate(userId, {
-        forgotPasswordToken: hashedToken,
-        forgotPasswordTokenExpiry: Date.now() + 3600000,
+        passwordResetTokenHash: hashedToken,
+        passwordResetExpiresAt: new Date(Date.now() + 60 * 60 * 1000),
       });
     }
 
@@ -41,25 +36,17 @@ export const sendEmail = async ({
 
     const link =
       emailType === "VERIFY"
-        ? `${process.env.DOMAIN}/verifyEmail?token=${token}&email=${encodeURIComponent(email)}`
-        : `${process.env.DOMAIN}/resetpassword?token=${token}`;
+        ? `${process.env.DOMAIN}/verifyEmail?token=${rawToken}&email=${encodeURIComponent(email)}`
+        : `${process.env.DOMAIN}/reset-password/${rawToken}`;
 
     const mailOptions = {
       from: "team@example.com",
       to: email,
-      subject:
-        emailType === "VERIFY"
-          ? "Verify your email"
-          : "Reset your password",
-
+      subject: emailType === "VERIFY" ? "Verify your email" : "Reset your password",
       html: `
         <p>
           Click <a href="${link}">here</a>
-          to ${
-            emailType === "VERIFY"
-              ? "verify your email"
-              : "reset your password"
-          }
+          to ${emailType === "VERIFY" ? "verify your email" : "reset your password"}
         </p>
       `,
     };
