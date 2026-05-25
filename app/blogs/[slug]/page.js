@@ -4,7 +4,7 @@ import Link from "next/link";
 import { DUMMY_POSTS } from "@/lib/dummy";
 import { isDbEnabled } from "@/lib/db";
 import Button from "@/components/Button";
-
+import BlogHistoryTracker from "@/components/BlogHistoryTracker";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -84,7 +84,9 @@ export default async function BlogDetailsPage(props) {
 
   if (!post) {
     return (
+
       <Container>
+        <BlogHistoryTracker post={post} />
         <div className="rounded-3xl border border-slate-200 bg-white/70 p-8 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25">
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
             Article not found

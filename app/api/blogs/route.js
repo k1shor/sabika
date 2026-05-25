@@ -49,7 +49,12 @@ export async function POST(req) {
   const parsed = PostCreateSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ ok: false, error: "Invalid data" }, { status: 400 });
 
-  if (!useDb()) return NextResponse.json({ ok: false, error: "USE_DB=false" }, { status: 400 });
+  if (!isDbEnabled()) {
+    return NextResponse.json(
+      { ok: false, error: "USE_DB=false" },
+      { status: 400 }
+    );
+  }
 
   await dbConnect();
   const created = await Post.create({ ...parsed.data, publishedAt: new Date() });

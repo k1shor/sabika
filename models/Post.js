@@ -15,6 +15,7 @@ const PostSchema = new mongoose.Schema(
     author: { type: String, default: "Nursing Nepal" },
     readTime: { type: String, default: "5 min read" },
     publishedAt: { type: Date, default: Date.now },
+    authorId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   },
   { timestamps: true }
 );
