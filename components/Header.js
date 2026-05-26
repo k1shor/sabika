@@ -179,16 +179,128 @@ function AvatarDropdown({ user, onLogout }) {
 // ─── Notification bell ────────────────────────────────────────────────────────
 
 function NotificationBell() {
+  const [open, setOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const ref = useRef(null);
+
+  const unreadCount = notifications.filter((item) => !item.read).length;
+
+  const load = async () => {
+    setLoading(true);
+
+    const res = await fetch("/api/auth/me/notifications", { cache: "no-store" });
+    const data = await res.json().catch(() => null);
+
+    setLoading(false);
+
+    if (data?.ok) {
+      setNotifications(Array.isArray(data.notifications) ? data.notifications : []);
+    }
+  };
+
+  const markAllRead = async () => {
+    await fetch("/api/auth/me/notifications", { method: "PATCH" }).catch(() => null);
+    await load();
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  useEffect(() => {
+    function handleClick(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    }
+
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
   return (
-    <button className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white/70 text-slate-600 transition
-    hover:bg-white hover:border-slate-300
-    dark:border-blue-400/20 dark:bg-blue-950/40 dark:text-blue-100 dark:hover:bg-blue-950/60">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-      </svg>
-      {/* Red dot */}
-      <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900" />
-    </button>
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => {
+          setOpen((value) => !value);
+          load();
+        }}
+        className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white/70 text-slate-600 transition hover:bg-white hover:border-slate-300 dark:border-blue-400/20 dark:bg-blue-950/40 dark:text-blue-100 dark:hover:bg-blue-950/60"
+        aria-label="Notifications"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+        {unreadCount > 0 ? (
+          <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-extrabold text-white ring-2 ring-white dark:ring-slate-900">
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </span>
+        ) : null}
+      </button>
+
+      {open ? (
+        <div className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg shadow-slate-200/50 dark:border-blue-400/20 dark:bg-slate-900 dark:shadow-none">
+          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-blue-400/10">
+            <div>
+              <p className="text-sm font-extrabold text-slate-900 dark:text-white">
+                Notifications
+              </p>
+              <p className="text-xs font-semibold text-slate-500 dark:text-blue-100/50">
+                {unreadCount} unread
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={markAllRead}
+              disabled={unreadCount === 0}
+              className="text-xs font-extrabold text-blue-700 transition hover:text-blue-600 disabled:text-slate-300 dark:text-blue-300 dark:disabled:text-blue-100/20"
+            >
+              Mark read
+            </button>
+          </div>
+
+          <div className="max-h-80 overflow-y-auto p-2">
+            {loading ? (
+              <div className="px-3 py-6 text-center text-sm font-semibold text-slate-500 dark:text-blue-100/60">
+                Loading...
+              </div>
+            ) : notifications.length === 0 ? (
+              <div className="px-3 py-6 text-center text-sm font-semibold text-slate-500 dark:text-blue-100/60">
+                No notifications yet.
+              </div>
+            ) : (
+              notifications.slice(0, 5).map((item) => (
+                <Link
+                  key={item._id}
+                  href={item.postSlug ? `/blogs/${item.postSlug}` : "/notifications"}
+                  onClick={() => setOpen(false)}
+                  className="block rounded-xl px-3 py-3 transition hover:bg-slate-50 dark:hover:bg-blue-950/40"
+                >
+                  <div className="flex items-start gap-2">
+                    {!item.read ? (
+                      <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-red-500" />
+                    ) : (
+                      <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-slate-200 dark:bg-blue-100/20" />
+                    )}
+                    <p className="text-sm font-semibold leading-snug text-slate-700 dark:text-blue-100/80">
+                      {item.message}
+                    </p>
+                  </div>
+                </Link>
+              ))
+            )}
+          </div>
+
+          <Link
+            href="/notifications"
+            onClick={() => setOpen(false)}
+            className="block border-t border-slate-100 px-4 py-3 text-center text-sm font-extrabold text-blue-700 transition hover:bg-slate-50 dark:border-blue-400/10 dark:text-blue-300 dark:hover:bg-blue-950/40"
+          >
+            View all notifications
+          </Link>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -318,6 +430,7 @@ export default function Header() {
               <>
                 <Link href="/profile"   onClick={() => setOpen(false)} className="hover:text-blue-600 dark:hover:text-red-300 transition">My Profile</Link>
                 <Link href="/saved"     onClick={() => setOpen(false)} className="hover:text-blue-600 dark:hover:text-red-300 transition">My Bookmarks</Link>
+                <Link href="/notifications" onClick={() => setOpen(false)} className="hover:text-blue-600 dark:hover:text-red-300 transition">Notifications</Link>
                 <Link href="/dashboard" onClick={() => setOpen(false)} className="hover:text-blue-600 dark:hover:text-red-300 transition">Dashboard</Link>
               </>
             )}

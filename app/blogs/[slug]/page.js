@@ -5,6 +5,7 @@ import { DUMMY_POSTS } from "@/lib/dummy";
 import { isDbEnabled } from "@/lib/db";
 import Button from "@/components/Button";
 import BlogHistoryTracker from "@/components/BlogHistoryTracker";
+import SavePostButton from "@/components/SavePostButton";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -64,6 +65,7 @@ async function findDbPost(slug) {
     _id: post._id ? String(post._id) : undefined,
     createdAt: post.createdAt instanceof Date ? post.createdAt.toISOString() : post.createdAt,
     updatedAt: post.updatedAt instanceof Date ? post.updatedAt.toISOString() : post.updatedAt,
+    authorId: post.authorId ? String(post.authorId) : undefined,
     publishedAt: post.publishedAt instanceof Date ? post.publishedAt.toISOString() : post.publishedAt,
   };
 }
@@ -115,10 +117,14 @@ export default async function BlogDetailsPage(props) {
   return (
     <Container>
       <div className="rounded-3xl border border-slate-200 bg-white/70 p-7 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25">
+        <BlogHistoryTracker post={post} />
 
-        <Link href="/blogs">
-          <Button>Back to Articles</Button>
-        </Link>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Link href="/blogs">
+            <Button>Back to Articles</Button>
+          </Link>
+          <SavePostButton slug={post.slug} />
+        </div>
 
         {post.coverImage && (
           <div className="mt-6 overflow-hidden rounded-3xl border border-slate-200 dark:border-blue-400/20">
@@ -187,6 +193,14 @@ export default async function BlogDetailsPage(props) {
                   <span className="text-sm font-semibold text-slate-700 dark:text-blue-100/80">
                     {post.author}
                   </span>
+                  {post.authorId ? (
+                    <Link
+                      href={`/writers/${String(post.authorId)}`}
+                      className="text-xs font-bold text-blue-700 hover:underline dark:text-blue-300"
+                    >
+                      View writer profile
+                    </Link>
+                  ) : null}
                   {post.authorRole && (
                     <span className="text-xs text-slate-500 dark:text-blue-100/50">
                       {post.authorRole}

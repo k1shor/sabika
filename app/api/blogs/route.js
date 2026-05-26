@@ -4,6 +4,8 @@ import { dbConnect, isDbEnabled } from "@/lib/db";
 import { Post } from "@/models/Post";
 import { requireApprovedWriter } from "@/lib/auth";
 import { PostCreateSchema } from "@/lib/validators";
+import { Follow } from "@/models/Follow";
+import { Notification } from "@/models/Notification";
 
 export async function GET() {
   if (!isDbEnabled()) {
@@ -57,6 +59,28 @@ export async function POST(req) {
   }
 
   await dbConnect();
-  const created = await Post.create({ ...parsed.data, publishedAt: new Date() });
+
+  const created = await Post.create({
+    ...parsed.data,
+    authorId: auth.user.id,
+    author: auth.user.name || "Nursing Nepal",
+    publishedAt: new Date(),
+  });
+
+  const followers = await Follow.find({ writerId: auth.user.id }).lean();
+
+  if (followers.length > 0) {
+    await Notification.insertMany(
+      followers.map((follow) => ({
+        userId: follow.followerId,
+        writerId: auth.user.id,
+        type: "new_post",
+        postSlug: created.slug,
+        message: `${auth.user.name || "A writer"} published a new post: ${created.title}`,
+        read: false,
+      }))
+    );
+  }
+
   return NextResponse.json({ ok: true, post: created });
 }
