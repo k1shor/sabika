@@ -65,7 +65,7 @@ function getRoleLabel(role) {
 
 // ─── Nav links ────────────────────────────────────────────────────────────────
 
-function NavLinks({ onClick, isAdmin, canApplyAsWriter }) {
+function NavLinks({ onClick, isAdmin, canApplyAsWriter, canWritePosts }) {
   return (
     <>
       {NAV_ITEMS.map((item) => (
@@ -83,6 +83,11 @@ function NavLinks({ onClick, isAdmin, canApplyAsWriter }) {
           Admin
         </Link>
       )}
+      {canWritePosts && (
+        <Link onClick={onClick} className="hover:text-blue-600 dark:hover:text-red-300 transition" href="/writers/posts">
+          My Posts
+        </Link>
+      )}
       {canApplyAsWriter && (
         <Link onClick={onClick} className="hover:text-blue-600 dark:hover:text-red-300 transition" href="/apply-writer">
           Apply Writer
@@ -97,6 +102,9 @@ function NavLinks({ onClick, isAdmin, canApplyAsWriter }) {
 function AvatarDropdown({ user, onLogout }) {
   const [open, setOpen] = useState(false);
   const ref             = useRef(null);
+  const canWritePosts =
+    user?.role === "admin" ||
+    (user?.role === "blog_writer" && user?.writerVerification?.status === "approved");
 
   useEffect(() => {
     function handleClick(e) {
@@ -109,6 +117,8 @@ function AvatarDropdown({ user, onLogout }) {
   const menuItems = [
     { href: "/profile",   icon: UserIcon,    label: "My Profile"       },
     { href: "/saved",     icon: BookmarkIcon, label: "My Bookmarks"    },
+    { href: "/following", icon: UserIcon,     label: "Following"       },
+    ...(canWritePosts ? [{ href: "/writers/posts", icon: HomeIcon, label: "My Posts" }] : []),
     { href: "/dashboard", icon: HomeIcon,     label: "Dashboard"       },
   ];
 
@@ -205,6 +215,7 @@ function NotificationBell() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, []);
 
@@ -331,7 +342,10 @@ export default function Header() {
       .catch(() => setMeData({ ok: false, user: null }));
   }, [pathname]);
 
-  useEffect(() => { setOpen(false); }, [pathname]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setOpen(false);
+  }, [pathname]);
 
   const toggleTheme = () => {
     const next = mode === "dark" ? "light" : "dark";
@@ -355,6 +369,9 @@ export default function Header() {
     meData?.user?.role === "blog_writer" &&
     verificationStatus !== "pending" &&
     verificationStatus !== "approved";
+  const canWritePosts =
+    isAdmin ||
+    (meData?.user?.role === "blog_writer" && verificationStatus === "approved");
 
   const isLoggedIn = meData?.ok && meData?.user;
 
@@ -376,7 +393,7 @@ export default function Header() {
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-5 text-sm font-semibold text-slate-700 dark:text-blue-100/85">
-          <NavLinks isAdmin={isAdmin} canApplyAsWriter={canApplyAsWriter} />
+          <NavLinks isAdmin={isAdmin} canApplyAsWriter={canApplyAsWriter} canWritePosts={canWritePosts} />
         </nav>
 
         {/* Desktop right cluster */}
@@ -424,12 +441,16 @@ export default function Header() {
       {open && (
         <div className="md:hidden border-t border-slate-200/70 bg-white/80 backdrop-blur dark:border-blue-400/20 dark:bg-slate-950/80">
           <div className="mx-auto max-w-6xl px-4 py-4 flex flex-col gap-3 text-sm font-semibold text-slate-700 dark:text-blue-100/85">
-            <NavLinks onClick={() => setOpen(false)} isAdmin={isAdmin} canApplyAsWriter={canApplyAsWriter} />
+            <NavLinks onClick={() => setOpen(false)} isAdmin={isAdmin} canApplyAsWriter={canApplyAsWriter} canWritePosts={canWritePosts} />
 
             {isLoggedIn && (
               <>
                 <Link href="/profile"   onClick={() => setOpen(false)} className="hover:text-blue-600 dark:hover:text-red-300 transition">My Profile</Link>
                 <Link href="/saved"     onClick={() => setOpen(false)} className="hover:text-blue-600 dark:hover:text-red-300 transition">My Bookmarks</Link>
+                <Link href="/following" onClick={() => setOpen(false)} className="hover:text-blue-600 dark:hover:text-red-300 transition">Following</Link>
+                {canWritePosts ? (
+                  <Link href="/writers/posts" onClick={() => setOpen(false)} className="hover:text-blue-600 dark:hover:text-red-300 transition">My Posts</Link>
+                ) : null}
                 <Link href="/notifications" onClick={() => setOpen(false)} className="hover:text-blue-600 dark:hover:text-red-300 transition">Notifications</Link>
                 <Link href="/dashboard" onClick={() => setOpen(false)} className="hover:text-blue-600 dark:hover:text-red-300 transition">Dashboard</Link>
               </>

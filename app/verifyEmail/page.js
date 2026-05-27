@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Suspense } from "react";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Container from "@/components/Container";
@@ -156,4 +157,23 @@ function VerifyEmailContent() {
   );
 }
 
-export default VerifyEmailContent;
+export default function VerifyEmailPage() {
+  return (
+    <Suspense
+      fallback={
+        <Container>
+          <div className="mx-auto max-w-md rounded-3xl border border-slate-200 bg-white/70 p-8 text-center shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25">
+            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+              Email Verification
+            </h1>
+            <p className="mt-4 text-sm font-semibold text-slate-700 dark:text-blue-100/80">
+              Loading verification page...
+            </p>
+          </div>
+        </Container>
+      }
+    >
+      <VerifyEmailContent />
+    </Suspense>
+  );
+}

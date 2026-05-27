@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import Container from "@/components/Container";
 import AdminPostsPanel from "./posts/AdminPostsPanel";
 import AdminUsersPanel from "./users/AdminUsersPanel";
@@ -32,11 +33,19 @@ export default async function AdminPage() {
             </p>
           </div>
 
-          <div className="text-sm font-semibold text-slate-700 dark:text-blue-100/80">
-            Logged in as{" "}
-            <span className="font-extrabold text-slate-900 dark:text-white">
-              {auth.user?.email}
-            </span>
+          <div className="grid gap-3 text-sm font-semibold text-slate-700 dark:text-blue-100/80">
+            <div>
+              Logged in as{" "}
+              <span className="font-extrabold text-slate-900 dark:text-white">
+                {auth.user?.email}
+              </span>
+            </div>
+            <Link
+              href="/admin/writer-applications"
+              className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white/80 px-4 py-2 text-sm font-extrabold text-slate-700 transition hover:bg-white dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-blue-100"
+            >
+              Review writer applications
+            </Link>
           </div>
         </div>
 

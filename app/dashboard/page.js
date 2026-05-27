@@ -45,10 +45,10 @@ function getGreeting() {
 // ─── Daily inspiration quotes ─────────────────────────────────────────────────
 
 const QUOTES = [
-  "Nursing is not just a profession. It's a way of making a difference.",
+  "Nursing is not just a profession. It is a way of making a difference.",
   "The trained nurse has become one of the great blessings of humanity.",
   "Nurses dispense comfort, compassion, and caring without even a prescription.",
-  "To do what nobody else will do, in a way that nobody else can — that's what nursing is.",
+  "To do what nobody else will do, in a way that nobody else can: that is what nursing is.",
   "Caring is the essence of nursing.",
 ];
 
@@ -75,7 +75,7 @@ function WelcomeBanner({ user }) {
           Welcome back, {getFirstName(user?.name)}! 👋
         </h1>
         <p className="mt-2 text-blue-100/80 text-sm max-w-md">
-          Stay informed. Stay inspired. Make a difference. Here's what's happening in your nursing community today.
+          Stay informed. Stay inspired. Make a difference. Here is what is happening in your nursing community today.
         </p>
         <div className="mt-5 flex flex-wrap gap-3">
           <Link
@@ -101,6 +101,7 @@ function ArticleCard({ post }) {
 
   useEffect(() => {
     const savedList = getSavedArticles();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSaved(savedList.some((s) => s.slug === post.slug));
   }, [post.slug]);
 
@@ -235,7 +236,7 @@ function ReadingHubCard({ savedCount, recentlyViewed }) {
           <p className="text-sm font-extrabold text-yellow-800 dark:text-yellow-300">Daily Inspiration</p>
         </div>
         <p className="text-sm text-yellow-700/80 dark:text-yellow-300/70 leading-relaxed italic">
-          "{getDailyQuote()}"
+          &quot;{getDailyQuote()}&quot;
         </p>
       </div>
 
@@ -287,6 +288,7 @@ export default function DashboardPage() {
       .catch(() => null)
       .finally(() => setLoading(false));
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSavedCount(getSavedArticles().length);
     setRecentlyViewed(getRecentlyViewed());
   }, []);
