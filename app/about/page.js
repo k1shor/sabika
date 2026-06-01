@@ -169,12 +169,12 @@ export default function AboutPage() {
           ))}
         </div>
 
-        {/* What you'll find */}
+        {/* What you will find */}
         <FadeUp delay={0.1} className="mt-6">
           <div className="rounded-2xl border border-slate-200 bg-white/80 p-6
             dark:border-blue-400/20 dark:bg-blue-950/30">
             <h2 className="text-lg font-extrabold text-slate-900 dark:text-white mb-4">
-              What You'll Find on Nursing Nepal
+              What You Will Find on Nursing Nepal
             </h2>
             <div className="grid gap-3 md:grid-cols-2">
               {features.map((f, i) => <FeatureCard key={i} {...f} index={i} />)}

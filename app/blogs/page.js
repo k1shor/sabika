@@ -11,25 +11,22 @@ function serializePost(post) {
   return {
     ...post,
     _id: post._id ? String(post._id) : undefined,
-    createdAt: post.createdAt instanceof Date ? post.createdAt.toISOString() : post.createdAt,
-    updatedAt: post.updatedAt instanceof Date ? post.updatedAt.toISOString() : post.updatedAt,
+    createdAt:   post.createdAt   instanceof Date ? post.createdAt.toISOString()   : post.createdAt,
+    updatedAt:   post.updatedAt   instanceof Date ? post.updatedAt.toISOString()   : post.updatedAt,
     publishedAt: post.publishedAt instanceof Date ? post.publishedAt.toISOString() : post.publishedAt,
   };
 }
 
 async function getPosts() {
   if (!isDbEnabled()) return DUMMY_POSTS || [];
-
   try {
     await dbConnect();
-
     const posts = await Post.find(
       {},
       { title: 1, slug: 1, excerpt: 1, coverImage: 1, tags: 1, author: 1, readTime: 1, publishedAt: 1, createdAt: 1 }
     )
       .sort({ publishedAt: -1 })
       .lean();
-
     return (posts || []).map(serializePost);
   } catch {
     return DUMMY_POSTS || [];
@@ -46,6 +43,7 @@ export default async function BlogsPage() {
   return (
     <Container>
       <div className="rounded-3xl border border-slate-200 bg-white/70 p-6 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25">
+        {/* Header — static, server-rendered */}
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-sm font-semibold text-slate-600 dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-blue-100/80">

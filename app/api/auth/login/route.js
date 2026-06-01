@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-import { dbConnect } from "@/lib/db";
+import { dbConnect, isDbEnabled } from "@/lib/db";
 import { User } from "@/models/User";
 import { signToken } from "@/lib/auth";
 
@@ -19,7 +19,22 @@ export async function POST(req) {
       return NextResponse.json({ ok: false, error: "Invalid input" }, { status: 400 });
     }
 
-    await dbConnect();
+    if (!isDbEnabled()) {
+      return NextResponse.json(
+        { ok: false, error: "Login is unavailable because USE_DB is not true." },
+        { status: 503 }
+      );
+    }
+
+    try {
+      await dbConnect();
+    } catch (err) {
+      console.error("Login DB connection failed:", err);
+      return NextResponse.json(
+        { ok: false, error: "Database connection failed. Check MONGODB_URI." },
+        { status: 500 }
+      );
+    }
 
     const email = parsed.data.email.trim().toLowerCase();
     const password = parsed.data.password;
@@ -27,7 +42,15 @@ export async function POST(req) {
     const user = await User.findOne({ email });
 
     if (!user || !user.passwordHash) {
-      return NextResponse.json({ ok: false, error: "Invalid credentials" }, { status: 401 });
+      return NextResponse.json(
+        {
+          ok: false,
+          error: user?.provider === "google"
+            ? "This account uses Google login. Please use Login with Google."
+            : "Invalid credentials",
+        },
+        { status: 401 }
+      );
     }
 
     const passwordMatches = await bcrypt.compare(password, user.passwordHash);
@@ -80,7 +103,11 @@ export async function POST(req) {
     });
 
     return res;
-  } catch {
-    return NextResponse.json({ ok: false, error: "Login failed" }, { status: 500 });
+  } catch (err) {
+    console.error("Login failed:", err);
+    return NextResponse.json(
+      { ok: false, error: err?.message || "Login failed" },
+      { status: 500 }
+    );
   }
 }

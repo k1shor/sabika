@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
 import cloudinary from "@/lib/cloudinary";
 import { requireApprovedWriter } from "@/lib/auth";
 
@@ -13,6 +15,25 @@ function ensureCloudinary() {
   if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
     throw new Error("Cloudinary env vars missing");
   }
+}
+
+function hasCloudinaryConfig() {
+  return Boolean(
+    process.env.CLOUDINARY_CLOUD_NAME &&
+      process.env.CLOUDINARY_API_KEY &&
+      process.env.CLOUDINARY_API_SECRET
+  );
+}
+
+async function saveLocalImage(buffer, filename) {
+  const uploadDir = path.join(process.cwd(), "public", "uploads", "blogs");
+  await mkdir(uploadDir, { recursive: true });
+
+  const safeName = `${Date.now()}-${filename}`;
+  const filePath = path.join(uploadDir, safeName);
+  await writeFile(filePath, buffer);
+
+  return `/uploads/blogs/${safeName}`;
 }
 
 async function uploadBuffer(buffer, filename) {
@@ -40,12 +61,6 @@ export async function POST(req) {
   const auth = await requireApprovedWriter();
   if (!auth.ok) return NextResponse.json({ ok: false, error: auth.error || "Forbidden" }, { status: 403 });
 
-  try {
-    ensureCloudinary();
-  } catch (e) {
-    return NextResponse.json({ ok: false, error: e.message || "Upload not configured" }, { status: 400 });
-  }
-
   const form = await req.formData().catch(() => null);
   if (!form) return NextResponse.json({ ok: false, error: "Invalid form data" }, { status: 400 });
 
@@ -68,6 +83,16 @@ export async function POST(req) {
   const filename = String(file.name || "image").replace(/[^\w.\-]+/g, "-").slice(0, 120);
 
   try {
+    if (!hasCloudinaryConfig()) {
+      const url = await saveLocalImage(buffer, filename);
+      return NextResponse.json({
+        ok: true,
+        url,
+        storage: "local",
+      });
+    }
+
+    ensureCloudinary();
     const result = await uploadBuffer(buffer, filename);
     return NextResponse.json({
       ok: true,

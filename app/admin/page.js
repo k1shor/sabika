@@ -46,6 +46,12 @@ export default async function AdminPage() {
             >
               Review writer applications
             </Link>
+            <Link
+              href="/admin/contact-messages"
+              className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white/80 px-4 py-2 text-sm font-extrabold text-slate-700 transition hover:bg-white dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-blue-100"
+            >
+              Contact messages
+            </Link>
           </div>
         </div>
 

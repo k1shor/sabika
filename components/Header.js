@@ -78,7 +78,7 @@ function DesktopNavLink({ href, label }) {
       {label}
       {/* Underline: always-visible slot, filled only when active */}
       <span
-        className={`h-[2.5px] w-full rounded-full bg-gradient-to-r from-blue-600 to-red-500 transition-opacity duration-150
+        className={`h-[2.5px] w-full rounded-full bg-linear-to-r from-blue-600 to-red-500 transition-opacity duration-150
           ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-40"}`}
       />
     </Link>
@@ -120,7 +120,7 @@ function MobileNavLink({ href, label, onClick }) {
           : "text-slate-600 hover:bg-slate-50 hover:text-blue-600 dark:text-blue-100/75 dark:hover:bg-blue-950/40 dark:hover:text-blue-300"
         }`}
     >
-      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${isActive ? "bg-gradient-to-br from-blue-600 to-red-500" : "bg-transparent"}`} />
+      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${isActive ? "bg-linear-to-br from-blue-600 to-red-500" : "bg-transparent"}`} />
       {label}
       {isActive && <span className="ml-auto text-[10px] font-bold text-blue-400 dark:text-blue-500">●</span>}
     </Link>
@@ -160,11 +160,11 @@ function AvatarDropdown({ user, onLogout }) {
           hover:border-blue-200 hover:shadow-md
           dark:border-blue-400/20 dark:bg-blue-950/50 dark:hover:bg-blue-950/70"
       >
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-[11px] font-extrabold text-white">
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-blue-500 to-blue-700 text-[11px] font-extrabold text-white">
           {getInitials(user.name)}
         </div>
         <div className="hidden lg:flex flex-col leading-tight text-left">
-          <span className="text-[12px] font-bold text-slate-800 dark:text-white max-w-[96px] truncate">{user.name || "User"}</span>
+          <span className="text-[12px] font-bold text-slate-800 dark:text-white max-w-24 truncate">{user.name || "User"}</span>
           <span className="text-[10px] font-semibold text-slate-400 dark:text-blue-300/60">{getRoleLabel(user.role)}</span>
         </div>
         <ChevronIcon className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
@@ -174,8 +174,8 @@ function AvatarDropdown({ user, onLogout }) {
         <div className="absolute right-0 top-full mt-2 w-56 rounded-2xl border border-slate-200/80 bg-white shadow-xl shadow-slate-200/60 z-50
           dark:border-blue-400/20 dark:bg-slate-900 dark:shadow-none overflow-hidden">
           {/* Header */}
-          <div className="flex items-center gap-3 px-4 py-3.5 border-b border-slate-100 dark:border-blue-400/10 bg-gradient-to-r from-blue-50/60 to-white dark:from-blue-950/30 dark:to-transparent">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-sm font-extrabold text-white">
+          <div className="flex items-center gap-3 px-4 py-3.5 border-b border-slate-100 dark:border-blue-400/10 bg-linear-to-r from-blue-50/60 to-white dark:from-blue-950/30 dark:to-transparent">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-blue-500 to-blue-700 text-sm font-extrabold text-white">
               {getInitials(user.name)}
             </div>
             <div className="min-w-0">
@@ -229,7 +229,10 @@ function NotificationBell() {
     await load();
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    load();
+  }, []);
   useEffect(() => {
     function handleClick(e) {
       if (ref.current && !ref.current.contains(e.target)) setOpen(false);
@@ -250,7 +253,7 @@ function NotificationBell() {
       >
         <BellIcon />
         {unreadCount > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-extrabold text-white ring-2 ring-white dark:ring-slate-950">
+          <span className="absolute -right-1 -top-1 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-extrabold text-white ring-2 ring-white dark:ring-slate-950">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
@@ -259,7 +262,7 @@ function NotificationBell() {
       {open && (
         <div className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xl shadow-slate-200/50
           dark:border-blue-400/20 dark:bg-slate-900 dark:shadow-none">
-          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-blue-400/10 bg-gradient-to-r from-slate-50 to-white dark:from-blue-950/20 dark:to-transparent">
+          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-blue-400/10 bg-linear-to-r from-slate-50 to-white dark:from-blue-950/20 dark:to-transparent">
             <div>
               <p className="text-sm font-extrabold text-slate-900 dark:text-white">Notifications</p>
               <p className="text-xs font-semibold text-slate-400 dark:text-blue-100/50">{unreadCount} unread</p>
@@ -350,7 +353,10 @@ export default function Header() {
       .catch(() => setMeData({ ok: false, user: null }));
   }, [pathname]);
 
-  useEffect(() => { setOpen(false); }, [pathname]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 8);

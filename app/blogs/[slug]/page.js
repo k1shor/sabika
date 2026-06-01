@@ -248,11 +248,11 @@ export default async function BlogDetailsPage(props) {
         <div className="mt-7 border-t border-slate-200 pt-6 dark:border-blue-400/20">
           {post.contentHtml ? (
             <article
-              className="prose prose-slate max-w-none dark:prose-invert"
+              className="blog-rich-content max-w-none"
               dangerouslySetInnerHTML={{ __html: post.contentHtml }}
             />
           ) : (
-            <article className="prose prose-slate max-w-none dark:prose-invert">
+            <article className="blog-rich-content max-w-none">
               {post.content || ""}
             </article>
           )}

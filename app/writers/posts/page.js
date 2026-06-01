@@ -15,7 +15,10 @@ async function uploadFile(file) {
 
   const res = await fetch("/api/upload", { method: "POST", body: form });
   const data = await res.json().catch(() => null);
-  return data?.ok ? data.url : null;
+  if (!data?.ok) {
+    throw new Error(data?.error || "Upload failed");
+  }
+  return data.url;
 }
 
 export default function WriterPostsPage() {
@@ -53,7 +56,6 @@ export default function WriterPostsPage() {
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadPosts();
   }, []);
 
@@ -65,15 +67,14 @@ export default function WriterPostsPage() {
     setBusy(true);
     setError(null);
 
-    const url = await uploadFile(file);
-    setBusy(false);
-
-    if (!url) {
-      setError("Cover image upload failed.");
-      return;
+    try {
+      const url = await uploadFile(file);
+      setCoverImage(url);
+    } catch (err) {
+      setError(err.message || "Cover image upload failed.");
+    } finally {
+      setBusy(false);
     }
-
-    setCoverImage(url);
   };
 
   const uploadInlineImage = async () => {
@@ -90,15 +91,15 @@ export default function WriterPostsPage() {
         setBusy(true);
         setError(null);
 
-        const url = await uploadFile(file);
-        setBusy(false);
-
-        if (!url) {
-          setError("Content image upload failed.");
-          return resolve(null);
+        try {
+          const url = await uploadFile(file);
+          resolve(url);
+        } catch (err) {
+          setError(err.message || "Content image upload failed.");
+          resolve(null);
+        } finally {
+          setBusy(false);
         }
-
-        resolve(url);
       };
 
       input.addEventListener("change", handler);

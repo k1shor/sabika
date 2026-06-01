@@ -81,9 +81,9 @@ export default function ContactPage() {
 
     if (data?.ok) {
       e.target.reset();
-      setMsg("Message sent successfully.");
+      setMsg(data.message || "Message sent successfully.");
     } else {
-      setMsg("Failed to send. Please check inputs.");
+      setMsg(data?.error || "Failed to send. Please check inputs.");
     }
   };
 

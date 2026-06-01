@@ -8,13 +8,13 @@ import SecondaryButton from "@/components/SecondaryButton";
 import Container from "@/components/Container";
 
 // ── Floating particle background ──────────────────────────────────────────────
-function Particle({ x, y, size, delay, color }) {
+function Particle({ x, y, size, delay, duration, color }) {
   return (
     <motion.div
       className="absolute rounded-full opacity-20 pointer-events-none"
       style={{ left: `${x}%`, top: `${y}%`, width: size, height: size, background: color }}
       animate={{ y: [0, -30, 0], opacity: [0.15, 0.35, 0.15] }}
-      transition={{ duration: 4 + Math.random() * 3, delay, repeat: Infinity, ease: "easeInOut" }}
+      transition={{ duration, delay, repeat: Infinity, ease: "easeInOut" }}
     />
   );
 }
@@ -25,6 +25,7 @@ const PARTICLES = Array.from({ length: 18 }, (_, i) => ({
   y: Math.random() * 100,
   size: 6 + Math.random() * 14,
   delay: Math.random() * 4,
+  duration: 4 + Math.random() * 3,
   color: i % 2 === 0 ? "#1d4ed8" : "#dc2626",
 }));
 
@@ -107,7 +108,7 @@ function TestimonialCard({ quote, name, role, avatar, index }) {
           </svg>
         ))}
       </div>
-      <p className="text-sm text-slate-600 leading-relaxed italic">"{quote}"</p>
+      <p className="text-sm text-slate-600 leading-relaxed italic">&quot;{quote}&quot;</p>
       <div className="mt-4 flex items-center gap-3">
         <div className="h-9 w-9 rounded-full bg-linear-to-br from-blue-400 to-blue-700 flex items-center justify-center text-white text-sm font-bold">
           {avatar}
@@ -292,7 +293,7 @@ export default function HomePage() {
                 transition={{ duration: 0.7, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
                 className="rounded-3xl border border-slate-200 bg-white/75 p-7 shadow-lg backdrop-blur-md"
               >
-                <div className="font-bold text-slate-700 tracking-wide uppercase text-xs">What you'll find here</div>
+                <div className="font-bold text-slate-700 tracking-wide uppercase text-xs">What you will find here</div>
 
                 <ul className="mt-5 space-y-3.5">
                   {[
@@ -398,10 +399,10 @@ export default function HomePage() {
               <span className="h-1.5 w-1.5 rounded-full bg-blue-600" /> Everything you need
             </div>
             <h2 className="text-4xl font-extrabold text-slate-900 tracking-tight">
-              Built for <span className="text-blue-700">Nepal's</span> <span className="text-red-600">Nurses</span>
+              Built for <span className="text-blue-700">Nepal</span> <span className="text-red-600">Nurses</span>
             </h2>
             <p className="mt-3 text-slate-500 max-w-lg mx-auto">
-              From clinical guidance to academic support, we've got every angle covered.
+              From clinical guidance to academic support, we have every angle covered.
             </p>
           </motion.div>
 
