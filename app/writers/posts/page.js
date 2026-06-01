@@ -25,6 +25,7 @@ export default function WriterPostsPage() {
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
   const [accessError, setAccessError] = useState(null);
+  const [followerCount, setFollowerCount] = useState(0);
   const [coverImage, setCoverImage] = useState("");
   const [contentHtml, setContentHtml] = useState("");
 
@@ -48,6 +49,7 @@ export default function WriterPostsPage() {
 
     setAccessError(null);
     setPosts(Array.isArray(data.posts) ? data.posts : []);
+    setFollowerCount(Number(data.followerCount) || 0);
   };
 
   useEffect(() => {
@@ -148,7 +150,10 @@ export default function WriterPostsPage() {
   
     setCoverImage("");
     setContentHtml("");
-    setMessage("Post published. Followers will get a notification.");
+    if (typeof data.followerCount === "number") {
+      setFollowerCount(data.followerCount);
+    }
+    setMessage("Post published. Followers and admins will get a notification.");
   
     await loadPosts();
   };
@@ -190,9 +195,12 @@ export default function WriterPostsPage() {
               Approved writers can publish posts. Admins can still moderate and delete any unsafe post.
             </p>
           </div>
-          <Link href="/apply-writer" className="text-sm font-extrabold text-blue-700 hover:text-blue-600 dark:text-blue-300">
-            Writer application
-          </Link>
+          <div className="grid gap-2 text-sm font-semibold text-slate-600 dark:text-blue-100/70 md:text-right">
+            <div className="text-2xl font-extrabold text-slate-900 dark:text-white">
+              {followerCount}
+            </div>
+            <div>Follower{followerCount === 1 ? "" : "s"}</div>
+          </div>
         </div>
 
         {(message || error || accessError) && (
@@ -207,7 +215,11 @@ export default function WriterPostsPage() {
 
         {accessError ? (
           <div className="rounded-3xl border border-slate-200 bg-white/70 p-7 text-sm font-semibold text-slate-600 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25 dark:text-blue-100/70">
-            Login as an approved blog writer to create posts. If your writer approval is still pending, wait for admin review.
+            Login as an approved blog writer to create posts. If you selected blog writer during registration but are not approved yet, submit your proof from{" "}
+            <Link href="/apply-writer" className="font-extrabold text-blue-700 hover:text-blue-600 dark:text-blue-300">
+              Writer Application
+            </Link>
+            . After admin approval, this page becomes your posting dashboard.
           </div>
         ) : (
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">

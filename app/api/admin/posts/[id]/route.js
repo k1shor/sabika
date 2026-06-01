@@ -75,7 +75,7 @@ export async function PATCH(req, { params }) {
     return NextResponse.json({ ok: false, error: "Database is disabled. Enable USE_DB=true" }, { status: 400 });
   }
 
-  const id = params?.id;
+  const id =params?.id;
   if (!id) return NextResponse.json({ ok: false, error: "Missing id" }, { status: 400 });
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return NextResponse.json({ ok: false, error: "Invalid id" }, { status: 400 });

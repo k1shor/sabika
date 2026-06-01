@@ -3,7 +3,11 @@ import mongoose from "mongoose";
 const NotificationSchema = new mongoose.Schema(
   {
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    type: { type: String, enum: ["new_post"], required: true },
+    type: {
+      type: String,
+      enum: ["new_post", "writer_application", "writer_approved", "writer_rejected"],
+      required: true,
+    },
     message: { type: String, required: true },
     postSlug: String,
     writerId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },

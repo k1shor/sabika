@@ -6,6 +6,7 @@ import { requireApprovedWriter } from "@/lib/auth";
 import { Post } from "@/models/Post";
 import { Follow } from "@/models/Follow";
 import { Notification } from "@/models/Notification";
+import { User } from "@/models/User";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -82,9 +83,12 @@ export async function GET() {
 
   await dbConnect();
 
-  const posts = await Post.find({ authorId: auth.user.id }).sort({ publishedAt: -1 }).lean();
+  const [posts, followerCount] = await Promise.all([
+    Post.find({ authorId: auth.user.id }).sort({ publishedAt: -1 }).lean(),
+    Follow.countDocuments({ writerId: auth.user.id }),
+  ]);
 
-  return NextResponse.json({ ok: true, posts: posts.map(serializePost) });
+  return NextResponse.json({ ok: true, posts: posts.map(serializePost), followerCount });
 }
 
 export async function POST(req) {
@@ -130,19 +134,35 @@ export async function POST(req) {
     publishedAt: new Date(),
   });
 
-  const followers = await Follow.find({ writerId: auth.user.id }).lean();
-  if (followers.length > 0) {
-    await Notification.insertMany(
-      followers.map((follow) => ({
+  const [followers, admins] = await Promise.all([
+    Follow.find({ writerId: auth.user.id }).lean(),
+    User.find({ role: "admin" }, { _id: 1 }).lean(),
+  ]);
+
+  const notifications = [
+    ...followers.map((follow) => ({
         userId: follow.followerId,
         writerId: auth.user.id,
         type: "new_post",
         postSlug: post.slug,
         message: `${auth.user.name || "A writer"} published a new post: ${post.title}`,
         read: false,
-      }))
-    );
+    })),
+    ...admins
+      .filter((admin) => String(admin._id) !== String(auth.user.id))
+      .map((admin) => ({
+        userId: admin._id,
+        writerId: auth.user.id,
+        type: "new_post",
+        postSlug: post.slug,
+        message: `${auth.user.name || "A writer"} published a new post: ${post.title}`,
+        read: false,
+      })),
+  ];
+
+  if (notifications.length > 0) {
+    await Notification.insertMany(notifications);
   }
 
-  return NextResponse.json({ ok: true, post: serializePost(post) });
+  return NextResponse.json({ ok: true, post: serializePost(post), followerCount: followers.length });
 }

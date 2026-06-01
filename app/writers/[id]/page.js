@@ -2,6 +2,7 @@ import Link from "next/link";
 import Container from "@/components/Container";
 import FollowWriterButton from "@/components/FollowWriterButton";
 import { dbConnect } from "@/lib/db";
+import { getAuthUser } from "@/lib/auth";
 import { User } from "@/models/User";
 import { Post } from "@/models/Post";
 import { Follow } from "@/models/Follow";
@@ -45,9 +46,11 @@ export default async function WriterProfilePage({ params }) {
     );
   }
 
-  const [posts, followerCount] = await Promise.all([
+  const authUser = await getAuthUser();
+  const [posts, followerCount, existingFollow] = await Promise.all([
     Post.find({ authorId: writer._id }).sort({ publishedAt: -1 }).lean(),
     Follow.countDocuments({ writerId: writer._id }),
+    authUser?.id ? Follow.findOne({ followerId: authUser.id, writerId: writer._id }).lean() : null,
   ]);
 
   const initials = String(writer.name || "W")
@@ -74,13 +77,14 @@ export default async function WriterProfilePage({ params }) {
                 <p className="mt-1 text-sm font-semibold text-slate-600 dark:text-blue-100/70">
                   Approved blog writer
                 </p>
-                <p className="mt-1 text-xs font-bold text-slate-500 dark:text-blue-100/50">
-                  {followerCount} follower{followerCount === 1 ? "" : "s"}
-                </p>
               </div>
             </div>
 
-            <FollowWriterButton writerId={String(writer._id)} />
+            <FollowWriterButton
+              writerId={String(writer._id)}
+              initialFollowing={Boolean(existingFollow)}
+              initialFollowerCount={followerCount}
+            />
           </div>
         </div>
 

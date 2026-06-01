@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getAuthUser } from "@/lib/auth";
 import { dbConnect } from "@/lib/db";
 import { User } from "@/models/User";
+import { Notification } from "@/models/Notification";
 
 const WriterApplicationSchema = z.object({
   writerCategory: z.enum([
@@ -89,6 +90,20 @@ export async function POST(req) {
       );
     }
 
+    if (user.writerVerification?.status === "approved") {
+      return NextResponse.json(
+        { ok: false, error: "Your writer account is already approved. You can post now." },
+        { status: 400 }
+      );
+    }
+
+    if (user.writerVerification?.status === "pending") {
+      return NextResponse.json(
+        { ok: false, error: "Your writer application is already pending admin review." },
+        { status: 400 }
+      );
+    }
+
     user.writerVerification = {
       status: "pending",
       category: parsed.data.writerCategory,
@@ -100,6 +115,19 @@ export async function POST(req) {
     };
 
     await user.save();
+
+    const admins = await User.find({ role: "admin" }, { _id: 1 }).lean();
+    if (admins.length > 0) {
+      await Notification.insertMany(
+        admins.map((admin) => ({
+          userId: admin._id,
+          writerId: user._id,
+          type: "writer_application",
+          message: `${user.name || user.email} submitted a writer application for admin review.`,
+          read: false,
+        }))
+      );
+    }
 
     return NextResponse.json({
       ok: true,

@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const RoleUpdateSchema = z.object({
-  role: z.enum(["user", "admin"]),
+  role: z.enum(["visitor", "blog_writer", "admin"]),
 });
 
 function serializeUser(user) {
@@ -17,7 +17,7 @@ function serializeUser(user) {
     _id: user._id ? String(user._id) : "",
     name: user.name || "",
     email: user.email || "",
-    role: user.role || "user",
+    role: user.role || "visitor",
     createdAt: user.createdAt instanceof Date ? user.createdAt.toISOString() : user.createdAt,
     updatedAt: user.updatedAt instanceof Date ? user.updatedAt.toISOString() : user.updatedAt,
   };
@@ -31,7 +31,7 @@ export async function PATCH(req, { params }) {
     return NextResponse.json({ ok: false, error: "Database is disabled. Enable USE_DB=true" }, { status: 400 });
   }
 
-  const id = params?.id;
+  const { id } = await params;
   if (!id) return NextResponse.json({ ok: false, error: "Missing id" }, { status: 400 });
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return NextResponse.json({ ok: false, error: "Invalid id" }, { status: 400 });

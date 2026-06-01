@@ -4,6 +4,25 @@ import { requireUser } from "@/lib/auth";
 import { User } from "@/models/User";
 import { Follow } from "@/models/Follow";
 
+async function followerState(userId, writerId) {
+  const [followerCount, follow] = await Promise.all([
+    Follow.countDocuments({ writerId }),
+    userId ? Follow.findOne({ followerId: userId, writerId }).lean() : null,
+  ]);
+
+  return { followerCount, following: Boolean(follow) };
+}
+
+export async function GET(_req, { params }) {
+  const auth = await requireUser();
+  const { id } = await params;
+
+  await dbConnect();
+
+  const state = await followerState(auth.ok ? auth.user.id : null, id);
+  return NextResponse.json({ ok: true, ...state });
+}
+
 export async function POST(_req, { params }) {
   const auth = await requireUser();
   if (!auth.ok) return NextResponse.json({ ok: false, error: "Login required" }, { status: 401 });
@@ -32,7 +51,9 @@ export async function POST(_req, { params }) {
     { upsert: true }
   );
 
-  return NextResponse.json({ ok: true, message: "Writer followed" });
+  const state = await followerState(auth.user.id, id);
+
+  return NextResponse.json({ ok: true, message: "Writer followed", ...state });
 }
 
 export async function DELETE(_req, { params }) {
@@ -44,5 +65,7 @@ export async function DELETE(_req, { params }) {
   await dbConnect();
   await Follow.deleteOne({ followerId: auth.user.id, writerId: id });
 
-  return NextResponse.json({ ok: true, message: "Writer unfollowed" });
+  const state = await followerState(auth.user.id, id);
+
+  return NextResponse.json({ ok: true, message: "Writer unfollowed", ...state });
 }

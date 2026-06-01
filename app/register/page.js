@@ -48,10 +48,15 @@ export default function RegisterPage() {
       setFieldErrors(data?.fields || {});
     }
   };
-
+  // At the top, add this hook alongside existing useState:
+  const sp = typeof window !== "undefined"
+    ? new URLSearchParams(window.location.search)
+    : null;
+  const googleError = sp?.get("error");
   const handleGoogle = async () => {
+    setGoogleLoading(true);
     await signIn("google", {
-      callbackUrl: `/api/auth/google-session?role=${role}`,
+      callbackUrl: `/api/auth/google-session?action=signup&role=${role}`,
     });
   };
 
@@ -218,7 +223,11 @@ export default function RegisterPage() {
               </span>
             )}
           </div>
-
+          {googleError === "google_exists" && (
+            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 dark:border-red-400/25 dark:bg-red-950/30 dark:text-red-300">
+              An account with this Google email already exists. Please log in instead.
+            </div>
+          )}
           {/* ── Google button ── */}
           <button
             type="button"
@@ -234,9 +243,9 @@ export default function RegisterPage() {
               <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
               <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
             </svg>
-            {googleLoading ? "Redirecting..." : `Continue with Google as ${role === "blog_writer" ? "Blog Writer" : "Visitor"}`}
+            {googleLoading ? "Redirecting..." : `Signup with Google as ${role === "blog_writer" ? "Blog Writer" : "Visitor"}`}
           </button>
-
+          
           {/* ── Login link ── */}
           <p className="text-center text-sm text-slate-600 dark:text-blue-100/75">
             Already have an account?{" "}
