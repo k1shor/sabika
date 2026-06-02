@@ -85,7 +85,7 @@ async function seedAdmin() {
 
   const admin = await User.findOneAndUpdate(
     { email: adminEmail },
-    { name: adminName, email: adminEmail, passwordHash, role: "admin" },
+    { name: adminName, email: adminEmail, passwordHash, role: "admin" , isVerified: true},
     { upsert: true, new: true, setDefaultsOnInsert: true }
   );
 
