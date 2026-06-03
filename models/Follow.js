@@ -9,6 +9,6 @@ const FollowSchema = new mongoose.Schema(
 );
 
 FollowSchema.index({ followerId: 1, writerId: 1 }, { unique: true });
+FollowSchema.index({ writerId: 1 }); // quickly fetch all followers of a writer
 
-export const Follow =
-  mongoose.models.Follow || mongoose.model("Follow", FollowSchema);
+export const Follow = mongoose.models.Follow || mongoose.model("Follow", FollowSchema);

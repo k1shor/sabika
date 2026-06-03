@@ -9,9 +9,7 @@ export async function GET() {
 
   await dbConnect();
 
-  const posts = await SavedPost.find({ userId: auth.user.id })
-    .sort({ createdAt: -1 })
-    .lean();
+  const posts = await SavedPost.find({ userId }).populate("postId", "title excerpt slug coverImage category tags")
 
   return NextResponse.json({ ok: true, posts });
 }
