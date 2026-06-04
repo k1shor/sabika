@@ -18,7 +18,8 @@ function serializeApplication(user) {
     _id: String(user._id),
     name: user.name || "",
     email: user.email || "",
-    role: user.role || "visitor",
+    role: "blog_writer",
+    badge: deriveBadge(user.writerVerification.category),
     writerVerification: {
       status: user.writerVerification?.status || "none",
       category: user.writerVerification?.category || "",

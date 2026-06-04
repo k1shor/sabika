@@ -6,6 +6,7 @@ import { User } from "@/models/User";
 import { Post } from "@/models/Post";
 import AdminPostsPanel from "@/app/admin/posts/AdminPostsPanel";
 import AdminUsersPanel from "@/app/admin/users/AdminUsersPanel";
+import WriterRequestsTable from "./WriterRequestsTable";
 
 export const dynamic = "force-dynamic";
 
@@ -22,10 +23,38 @@ function timeAgo(date) {
   return `${days}d ago`;
 }
 
-function formatCategory(cat) {
-  if (!cat) return "—";
-  return cat.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
+// ─── Icons ────────────────────────────────────────────────────────────────────
+
+const UsersIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+  </svg>
+);
+const FileIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+    <polyline points="14 2 14 8 20 8"/>
+  </svg>
+);
+const EditIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+  </svg>
+);
+const AlertIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+    <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+  </svg>
+);
+const BanIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/>
+    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+  </svg>
+);
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 
@@ -43,13 +72,13 @@ function StatCard({ icon, label, value, color }) {
   );
 }
 
-// ─── Line Chart ───────────────────────────────────────────────────────────────
+// ─── Charts ───────────────────────────────────────────────────────────────────
 
 function LineChart({ data }) {
   if (!data?.length) return (
     <div className="flex h-32 items-center justify-center text-sm text-slate-400">No data yet</div>
   );
-  const max    = Math.max(...data.map((d) => d.count), 1);
+  const max = Math.max(...data.map((d) => d.count), 1);
   const w = 400; const h = 120; const pad = 10;
   const points = data.map((d, i) => ({
     x: pad + (i / Math.max(data.length - 1, 1)) * (w - pad * 2),
@@ -71,8 +100,6 @@ function LineChart({ data }) {
     </svg>
   );
 }
-
-// ─── Bar Chart ────────────────────────────────────────────────────────────────
 
 function BarChart({ data, color = "#22c55e" }) {
   if (!data?.length) return (
@@ -117,22 +144,26 @@ function ActivityFeed({ items }) {
   );
 }
 
-// ─── Writer Requests (client island) ─────────────────────────────────────────
-// We pass initial data from server, actions done client-side
-
-import WriterRequestsTable from "./WriterRequestsTable";
-
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
+
+function NavIcon({ name }) {
+  const cls = "opacity-60";
+  if (name === "grid")  return <svg className={cls} xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>;
+  if (name === "edit")  return <svg className={cls} xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
+  if (name === "users") return <svg className={cls} xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
+  if (name === "file")  return <svg className={cls} xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>;
+  if (name === "mail")  return <svg className={cls} xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>;
+  return null;
+}
 
 function AdminSidebar({ pendingCount, user }) {
   const items = [
-    { label: "Dashboard",         href: "/admin/dashboard",            icon: "grid"   },
-    { label: "Writer Requests",   href: "/admin/writer-applications",  icon: "edit",  badge: pendingCount },
-    { label: "Manage Users",      href: "/admin/dashboard#users",      icon: "users"  },
-    { label: "Manage Posts",      href: "/admin/dashboard#posts",      icon: "file"   },
-    { label: "Contact Messages",  href: "/admin/contact-messages",     icon: "mail"   },
+    { label: "Dashboard",        href: "/admin/dashboard",           icon: "grid" },
+    { label: "Writer Requests",  href: "/admin/writer-applications", icon: "edit", badge: pendingCount },
+    { label: "Manage Users",     href: "/admin/dashboard#users",     icon: "users" },
+    { label: "Manage Posts",     href: "/admin/dashboard#posts",     icon: "file" },
+    { label: "Contact Messages", href: "/admin/contact-messages",    icon: "mail" },
   ];
-
   return (
     <aside className="hidden md:flex w-56 shrink-0 flex-col justify-between border-r border-slate-200 bg-white dark:border-blue-400/20 dark:bg-slate-950 min-h-screen sticky top-0">
       <div>
@@ -164,8 +195,7 @@ function AdminSidebar({ pendingCount, user }) {
             <p className="text-xs text-slate-400">Administrator</p>
           </div>
         </div>
-        <Link href="/"
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-500 px-3 py-2 text-xs font-bold text-white hover:bg-red-600 transition">
+        <Link href="/" className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-500 px-3 py-2 text-xs font-bold text-white hover:bg-red-600 transition">
           ← Back to Site
         </Link>
       </div>
@@ -173,31 +203,20 @@ function AdminSidebar({ pendingCount, user }) {
   );
 }
 
-function NavIcon({ name }) {
-  const cls = "opacity-60";
-  if (name === "grid")  return <svg className={cls} xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>;
-  if (name === "edit")  return <svg className={cls} xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
-  if (name === "users") return <svg className={cls} xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
-  if (name === "file")  return <svg className={cls} xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>;
-  if (name === "mail")  return <svg className={cls} xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>;
-  return null;
-}
-
-// ─── Main Page (Server Component) ────────────────────────────────────────────
+// ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default async function AdminDashboardPage() {
-  // Auth check
   const auth = await requireAdmin();
   if (!auth.ok) redirect("/login?next=/admin/dashboard");
 
   await dbConnect();
 
-  // ── Fetch all stats server-side ──────────────────────────────────────────
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const sevenDaysAgo = new Date(Date.now() - 7  * 24 * 60 * 60 * 1000);
   const fiveWeeksAgo = new Date(Date.now() - 35 * 24 * 60 * 60 * 1000);
 
   const [
     totalUsers,
+    bannedUsers,
     totalPosts,
     pendingWriters,
     flaggedPosts,
@@ -208,9 +227,10 @@ export default async function AdminDashboardPage() {
     recentPostsRaw,
   ] = await Promise.all([
     User.countDocuments(),
+    User.countDocuments({ isBanned: true }),
     Post.countDocuments(),
     User.countDocuments({ "writerVerification.status": "pending" }),
-    Post.countDocuments({ flagged: true }),
+    Post.countDocuments({ isFlagged: true }),
     Post.aggregate([
       { $match: { createdAt: { $gte: sevenDaysAgo } } },
       { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, count: { $sum: 1 } } },
@@ -223,48 +243,51 @@ export default async function AdminDashboardPage() {
     ]),
     User.find(
       { "writerVerification.status": "pending" },
-      { name: 1, email: 1, "writerVerification": 1 }
+      { name: 1, email: 1, writerVerification: 1 }
     ).sort({ "writerVerification.submittedAt": -1 }).limit(10).lean(),
-    User.find({}, { name: 1, createdAt: 1, "writerVerification.status": 1 }).sort({ createdAt: -1 }).limit(5).lean(),
-    Post.find({}, { title: 1, author: 1, createdAt: 1 }).sort({ createdAt: -1 }).limit(5).lean(),
+    User.find({}, { name: 1, createdAt: 1, "writerVerification.status": 1 })
+      .sort({ createdAt: -1 }).limit(5).lean(),
+    Post.find({}, { title: 1, authorId: 1, createdAt: 1 })
+      .populate("authorId", "name")
+      .sort({ createdAt: -1 }).limit(5).lean(),
+    // ✅ NO unlimited User.find() here anymore — AdminUsersPanel fetches its own data
   ]);
 
-  // ── Format chart data ────────────────────────────────────────────────────
+  // ── Chart data ────────────────────────────────────────────────────────────
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const postsPerDay = postsPerDayRaw.map((d) => ({
     count: d.count,
     label: dayNames[new Date(d._id).getDay()],
   }));
-
   const usersPerWeek = usersPerWeekRaw.map((d, i) => ({
     count: d.count,
     label: `W${i + 1}`,
   }));
 
-  // ── Format activity feed ──────────────────────────────────────────────────
+  // ── Activity feed ─────────────────────────────────────────────────────────
   const activity = [
     ...recentUsersRaw.map((u) => ({
-      name:   u.name,
+      name:   u.name || "Unknown",
       action: u.writerVerification?.status === "pending"
         ? "requested to become a writer"
         : "joined the platform",
       time: u.createdAt,
     })),
     ...recentPostsRaw.map((p) => ({
-      name:   p.author || "Unknown",
-      action: "submitted a new blog",
+      name:   p.authorId?.name || "Unknown",
+      action: "published a new blog",
       time:   p.createdAt,
     })),
   ].sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, 8);
 
-  // ── Serialize writer requests ─────────────────────────────────────────────
+  // ── Writer requests ───────────────────────────────────────────────────────
   const writerRequests = writerRequestsRaw.map((u) => ({
-    _id:        String(u._id),
-    name:       u.name,
-    email:      u.email,
-    category:   u.writerVerification?.category || "",
-    workplace:  u.writerVerification?.workplace || "—",
-    licenseNo:  u.writerVerification?.licenseNo || "—",
+    _id:         String(u._id),
+    name:        u.name  || "",
+    email:       u.email || "",
+    category:    u.writerVerification?.category    || "",
+    workplace:   u.writerVerification?.workplace   || "—",
+    licenseNo:   u.writerVerification?.licenseNo   || "—",
     documentUrl: u.writerVerification?.documentUrl || "",
     submittedAt: u.writerVerification?.submittedAt
       ? new Date(u.writerVerification.submittedAt).toISOString()
@@ -288,8 +311,8 @@ export default async function AdminDashboardPage() {
               </span>
             )}
           </Link>
-          <Link href="/admin/dashboard#users"  className="text-sm font-semibold text-slate-500 hover:text-slate-700 dark:text-blue-100/60">Manage Users</Link>
-          <Link href="/admin/dashboard#posts"  className="text-sm font-semibold text-slate-500 hover:text-slate-700 dark:text-blue-100/60">Manage Posts</Link>
+          <Link href="/admin/dashboard#users" className="text-sm font-semibold text-slate-500 hover:text-slate-700 dark:text-blue-100/60">Manage Users</Link>
+          <Link href="/admin/dashboard#posts" className="text-sm font-semibold text-slate-500 hover:text-slate-700 dark:text-blue-100/60">Manage Posts</Link>
           <Link href="/admin/contact-messages" className="text-sm font-semibold text-slate-500 hover:text-slate-700 dark:text-blue-100/60">Contact Messages</Link>
           <div className="ml-auto">
             <Link href="/" className="rounded-xl border border-slate-200 px-4 py-1.5 text-sm font-bold text-slate-700 hover:bg-slate-50 transition dark:border-blue-400/20 dark:text-blue-100">
@@ -304,11 +327,12 @@ export default async function AdminDashboardPage() {
           </h1>
 
           {/* Stat cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard label="Total Users"     value={totalUsers}    color="bg-blue-50   text-blue-600  dark:bg-blue-950/40"  icon={<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>} />
-            <StatCard label="Total Blogs"     value={totalPosts}    color="bg-green-50  text-green-600 dark:bg-green-950/40" icon={<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>} />
-            <StatCard label="Pending Writers" value={pendingWriters} color="bg-yellow-50 text-yellow-600 dark:bg-yellow-950/40" icon={<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>} />
-            <StatCard label="Flagged Posts"   value={flaggedPosts}  color="bg-red-50    text-red-600   dark:bg-red-950/40"   icon={<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>} />
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+            <StatCard label="Total Users"     value={totalUsers}     color="bg-blue-50 text-blue-600 dark:bg-blue-950/40"       icon={<UsersIcon />} />
+            <StatCard label="Total Blogs"     value={totalPosts}     color="bg-green-50 text-green-600 dark:bg-green-950/40"    icon={<FileIcon />} />
+            <StatCard label="Pending Writers" value={pendingWriters} color="bg-yellow-50 text-yellow-600 dark:bg-yellow-950/40" icon={<EditIcon />} />
+            <StatCard label="Flagged Posts"   value={flaggedPosts}   color="bg-orange-50 text-orange-600 dark:bg-orange-950/40" icon={<AlertIcon />} />
+            <StatCard label="Banned Users"    value={bannedUsers}    color="bg-red-50 text-red-600 dark:bg-red-950/40"          icon={<BanIcon />} />
           </div>
 
           {/* Charts + Activity */}
@@ -322,21 +346,22 @@ export default async function AdminDashboardPage() {
               <BarChart data={usersPerWeek} />
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25">
-              <p className="text-sm font-extrabold text-slate-800 dark:text-white mb-4">Activity Feed</p>
+              <p className="text-sm font-extrabold text-slate-800 dark:text-white mb-4">Recent Activity</p>
               <ActivityFeed items={activity} />
             </div>
           </div>
 
-          {/* Writer requests — client component for approve/reject */}
+          {/* Writer requests */}
           <WriterRequestsTable initialWriters={writerRequests} />
 
-          {/* Existing working panels */}
+          {/* Posts panel */}
           <div id="posts">
             <AdminPostsPanel />
           </div>
 
+          {/* Users panel — fetches its own paginated data, no props needed */}
           <div id="users">
-            <AdminUsersPanel />
+            <AdminUsersPanel currentUserId={auth.user.id} />
           </div>
 
         </main>

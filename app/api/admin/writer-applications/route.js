@@ -36,10 +36,9 @@ export async function GET() {
   await dbConnect();
 
   const users = await User.find({
-    role: "blog_writer",
     "writerVerification.status": { $in: ["pending", "approved", "rejected"] },
   })
-    .sort({ "writerVerification.submittedAt": -1, createdAt: -1 })
+    .sort({ "writerVerification.submittedAt": -1 })
     .lean();
 
   return NextResponse.json({ ok: true, applications: users.map(serializeApplication) });

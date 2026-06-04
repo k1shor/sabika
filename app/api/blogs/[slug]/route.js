@@ -17,15 +17,23 @@ export async function GET(_req, { params }) {
 
   await dbConnect();
 
-  const dbPost = await Post.findOne({ slug }).lean();
-  if (dbPost) {
-    return NextResponse.json({ ok: true, post: serializePost(dbPost) });
-  }
+  const post = await Post.findOne({ slug, status: "approved" }) // ❌ missing status filter
+    .populate("authorId", "name avatarUrl badge username bio") // ❌ missing populate
+    .lean();
 
-  const dummyPost = findDummy();
-  if (!dummyPost) {
+  if (!post) {
     return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
   }
 
-  return NextResponse.json({ ok: true, post: serializePost(dummyPost) });
+  // increment view count
+  await Post.updateOne({ _id: post._id }, { $inc: { views: 1 } }); // ❌ missing
+
+  // anonymous protection
+  const safePost = {
+    ...post,
+    authorId: post.isAnonymous ? null : post.authorId,
+    authorLabel: post.isAnonymous ? "Anonymous Nurse" : undefined,
+  };
+
+  return NextResponse.json({ ok: true, post: safePost });
 }

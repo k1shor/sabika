@@ -76,21 +76,56 @@ const CreatePostSchema = z.object({
   author: optionalString(z.string().max(80)),
   readTime: optionalString(z.string().max(30)),
   publishedAt: OptionalDateSchema,
+  category: z.enum([
+    "entrance_pass",
+    "nursing_student", 
+    "working_nurse",
+    "abroad_study",
+    "abroad_work",
+  ]),
+  postType: z.enum([
+    "normal",
+    "reality_check",
+    "hospital_diary",
+    "country_pathway",
+  ]).default("normal"),
 });
 
-export async function GET() {
+export async function GET(req) {
+  const auth = await requireAdmin();
+  if (!auth.ok) return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
+
   if (!isDbEnabled()) {
-    const posts = (DUMMY_POSTS || []).map((p) => ({ ...p, _id: p.slug }));
-    return NextResponse.json({ ok: true, posts });
+    return NextResponse.json({ ok: true, posts: DUMMY_POSTS || [] });
   }
 
   await dbConnect();
 
-  const posts = await Post.find({})
-    .sort({ publishedAt: -1 })
-    .lean();
+  const { searchParams } = new URL(req.url);
+  const page     = Math.max(1, parseInt(searchParams.get("page") || "1"));
+  const limit    = 20;
+  const status   = searchParams.get("status");   // filter by status
+  const flagged  = searchParams.get("flagged");  // filter flagged only
 
-  return NextResponse.json({ ok: true, posts });
+  const filter = {};
+  if (status) filter.status = status;
+  if (flagged === "true") filter.isFlagged = true;
+
+  const [posts, total] = await Promise.all([
+    Post.find(filter)
+      .populate("authorId", "name avatarUrl badge")
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean(),
+    Post.countDocuments(filter),
+  ]);
+
+  return NextResponse.json({
+    ok: true,
+    posts,
+    pagination: { page, total, totalPages: Math.ceil(total / limit) },
+  });
 }
 
 export async function POST(req) {
@@ -129,10 +164,14 @@ export async function POST(req) {
     coverImage,
     images,
     contentHtml,
-    tags: Array.isArray(parsed.data.tags) ? parsed.data.tags : [],
-    author: parsed.data.author || "Nursing Nepal",
+    category: parsed.data.category,      // required — missing!
+    postType: parsed.data.postType || "normal",
+    tags: parsed.data.tags || [],
+    isAnonymous: false,                   // admin posts are never anonymous
+    authorId: auth.user.id,              // missing!
+    status: "approved",                  // admin posts auto approved
     readTime: parsed.data.readTime || "5 min read",
-    publishedAt: parsed.data.publishedAt ? new Date(parsed.data.publishedAt) : new Date(),
+    publishedAt: new Date(),
   });
 
   return NextResponse.json({ ok: true, post });

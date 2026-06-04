@@ -58,7 +58,12 @@ export async function POST(req) {
     if (!passwordMatches) {
       return NextResponse.json({ ok: false, error: "Invalid credentials" }, { status: 401 });
     }
-
+    if (user.isBanned) {
+      return NextResponse.json(
+        { ok: false, error: "Your account has been suspended. Contact support." },
+        { status: 403 }
+      );
+    }
     if (!user.isVerified) {
       return NextResponse.json(
         { ok: false, error: "Please verify your email first" },
@@ -77,6 +82,7 @@ export async function POST(req) {
       name: user.name,
       email: user.email,
       role,
+      avatarUrl: user.avatarUrl || ""
     });
 
     const res = NextResponse.json({
@@ -87,6 +93,9 @@ export async function POST(req) {
         name: user.name,
         email: user.email,
         role,
+        avatarUrl: user.avatarUrl || "",      
+        username: user.username || null,       
+        badge: user.badge || "",
         writerVerification: {
           status: user.writerVerification?.status || "none",
           category: user.writerVerification?.category || null,

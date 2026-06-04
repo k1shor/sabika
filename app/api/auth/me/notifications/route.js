@@ -14,13 +14,16 @@ export async function GET() {
   }
 
   await dbConnect();
-
-  const notifications = await Notification.find({ userId: auth.user.id })
+// add unreadCount to GET response
+const [notifications, unreadCount] = await Promise.all([
+  Notification.find({ userId: auth.user.id })
     .sort({ createdAt: -1 })
     .limit(50)
-    .lean();
+    .lean(),
+  Notification.countDocuments({ userId: auth.user.id, read: false }),
+]);
 
-  return NextResponse.json({ ok: true, notifications });
+return NextResponse.json({ ok: true, notifications, unreadCount });
 }
 
 export async function PATCH() {
@@ -37,7 +40,7 @@ export async function PATCH() {
 
   await Notification.updateMany(
     { userId: auth.user.id, read: false },
-    { read: true }
+    { read: true, readAt: new Date() }
   );
 
   return NextResponse.json({ ok: true });

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
-import { dbConnect } from "@/lib/db";
+import { dbConnect, isDbEnabled } from "@/lib/db"; 
 import { User } from "@/models/User";
 
 export async function POST(req) {
@@ -12,6 +12,12 @@ export async function POST(req) {
       return NextResponse.json(
         { ok: false, error: "Verification token is required" },
         { status: 400 }
+      );
+    }
+    if (!isDbEnabled()) {
+      return NextResponse.json(
+        { ok: false, error: "Service unavailable." },
+        { status: 503 }
       );
     }
 
@@ -38,6 +44,12 @@ export async function POST(req) {
         ok: true,
         message: "Your email is already verified. You can login now.",
       });
+    }
+    if (user.isBanned) {
+      return NextResponse.json(
+        { ok: false, error: "This account has been suspended." },
+        { status: 403 }
+      );
     }
 
     user.isVerified = true;

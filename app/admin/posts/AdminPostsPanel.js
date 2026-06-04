@@ -4,13 +4,15 @@ import { useEffect, useState } from "react";
 import Button from "@/components/Button";
 import Input from "@/components/Input";
 
-const ROLES = ["visitor", "blog_writer", "admin"];
+const STATUS_FILTERS = ["all", "approved", "pending", "rejected"];
 
-function roleLabel(role) {
-  if (role === "admin") return "Admin";
-  if (role === "blog_writer") return "Blog Writer";
-  return "Visitor";
-}
+const CATEGORY_LABELS = {
+  entrance_pass:   "Entrance Pass",
+  nursing_student: "Nursing Student",
+  working_nurse:   "Working Nurse",
+  abroad_study:    "Abroad Study",
+  abroad_work:     "Abroad Work",
+};
 
 function formatDate(value) {
   const date = new Date(value || 0);
@@ -18,179 +20,274 @@ function formatDate(value) {
   return date.toLocaleDateString();
 }
 
-export default function AdminUsersPanel() {
-  const [users, setUsers] = useState([]);
-  const [currentUserId, setCurrentUserId] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [busyId, setBusyId] = useState(null);
-  const [msg, setMsg] = useState(null);
-  const [query, setQuery] = useState("");
- 
-  const load = async (search = query) => {
+function statusStyle(status) {
+  if (status === "approved") return "bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-200";
+  if (status === "pending")  return "bg-yellow-50 text-yellow-700 dark:bg-yellow-500/15 dark:text-yellow-200";
+  if (status === "rejected") return "bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-200";
+  return "bg-slate-100 text-slate-600";
+}
+
+export default function AdminPostsPanel() {
+  const [posts, setPosts]         = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [busyId, setBusyId]       = useState(null);
+  const [msg, setMsg]             = useState(null);
+  const [query, setQuery]         = useState("");
+  const [statusFilter, setStatus] = useState("all");
+  const [flaggedOnly, setFlagged] = useState(false);
+  const [page, setPage]           = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const load = async (search = query, s = statusFilter, f = flaggedOnly, p = page) => {
     setLoading(true);
     setMsg(null);
+    try {
+      const qs = new URLSearchParams();
+      if (search.trim()) qs.set("q", search.trim());
+      if (s !== "all")   qs.set("status", s);
+      if (f)             qs.set("flagged", "true");
+      qs.set("page", String(p));
 
-    const qs = search.trim() ? `?q=${encodeURIComponent(search.trim())}` : "";
-    const res = await fetch(`/api/admin/users${qs}`, { cache: "no-store" });
-    const data = await res.json().catch(() => null);
-
-    setLoading(false);
-
-    if (!data?.ok) {
-      setMsg(data?.error || "Failed to load users");
-      setUsers([]);
-      setCurrentUserId(null);
-      return;
+      const res  = await fetch(`/api/admin/posts?${qs}`, { cache: "no-store" });
+      const data = await res.json().catch(() => null);
+      if (!data?.ok) { setMsg(data?.error || "Failed to load posts"); setPosts([]); return; }
+      setPosts(Array.isArray(data.posts) ? data.posts : []);
+      setTotalPages(data.pagination?.totalPages || 1);
+    } catch {
+      setMsg("Failed to load posts");
+    } finally {
+      setLoading(false);
     }
-
-    setUsers(Array.isArray(data.users) ? data.users : []);
-    setCurrentUserId(data.currentUserId || null);
   };
 
-  useEffect(() => {
-    // Initial data sync from the admin API.
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useEffect(() => { load(); }, []); // eslint-disable-line
 
-  const updateRole = async (id, role) => {
+  const handleSearch = (e) => {
+    e.preventDefault();
+    setPage(1);
+    load(query, statusFilter, flaggedOnly, 1);
+  };
+
+  const updatePost = async (id, body) => {
     setBusyId(id);
     setMsg(null);
-
-    const res = await fetch(`/api/admin/users/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ role }),
-    });
-
-    const data = await res.json().catch(() => null);
-    setBusyId(null);
-
-    if (!data?.ok) {
-      setMsg(data?.error || "Failed to update user role");
-      return;
+    try {
+      const res  = await fetch(`/api/admin/posts/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json().catch(() => null);
+      if (!data?.ok) { setMsg(data?.error || "Failed to update post"); return; }
+      setPosts((list) => list.map((p) => (p._id === id ? { ...p, ...data.post } : p)));
+      setMsg("Post updated.");
+    } catch {
+      setMsg("Failed to update post");
+    } finally {
+      setBusyId(null);
     }
-
-    setUsers((list) => list.map((user) => (user._id === id ? data.user : user)));
-    setMsg(`User role changed to ${roleLabel(role)}.`);
   };
 
-  const searchUsers = (event) => {
-    event.preventDefault();
-    load(query);
+  const deletePost = async (id) => {
+    if (!confirm("Permanently delete this post?")) return;
+    setBusyId(id);
+    try {
+      const res  = await fetch(`/api/admin/posts/${id}`, { method: "DELETE" });
+      const data = await res.json().catch(() => null);
+      if (!data?.ok) { setMsg(data?.error || "Failed to delete"); return; }
+      setPosts((list) => list.filter((p) => p._id !== id));
+      setMsg("Post deleted.");
+    } catch {
+      setMsg("Failed to delete post");
+    } finally {
+      setBusyId(null);
+    }
   };
 
   return (
     <div className="rounded-3xl border border-slate-200 bg-white/70 p-6 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25">
+
+      {/* Header */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-            User Accounts
+            Manage Posts
           </h2>
           <p className="mt-1 text-sm font-semibold text-slate-600 dark:text-blue-100/70">
-            Search users and assign visitor, blog writer, or admin roles.
+            Review, approve, flag, or delete blog posts.
           </p>
         </div>
-
-        <form onSubmit={searchUsers} className="flex w-full gap-2 lg:max-w-md">
+        <form onSubmit={handleSearch} className="flex w-full gap-2 lg:max-w-md">
           <Input
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search name, email, or role"
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search title or author..."
           />
-          <Button type="submit" disabled={loading || Boolean(busyId)}>
-            Search
-          </Button>
-          <Button type="button" disabled={loading || Boolean(busyId)} onClick={() => load(query)}>
+          <Button type="submit" disabled={loading || Boolean(busyId)}>Search</Button>
+          <Button type="button" disabled={loading || Boolean(busyId)} onClick={() => load()}>
             Refresh
           </Button>
         </form>
       </div>
 
+      {/* Filters */}
+      <div className="mt-4 flex flex-wrap gap-2">
+        {STATUS_FILTERS.map((f) => (
+          <button
+            key={f}
+            type="button"
+            onClick={() => { setStatus(f); setPage(1); load(query, f, flaggedOnly, 1); }}
+            className={`rounded-full px-4 py-1.5 text-xs font-semibold border transition
+              ${statusFilter === f
+                ? "bg-blue-600 text-white border-blue-600"
+                : "border-slate-200 text-slate-600 dark:border-blue-400/20 dark:text-blue-100/70"
+              }`}
+          >
+            {f.charAt(0).toUpperCase() + f.slice(1)}
+          </button>
+        ))}
+        <button
+          type="button"
+          onClick={() => { setFlagged(!flaggedOnly); setPage(1); load(query, statusFilter, !flaggedOnly, 1); }}
+          className={`rounded-full px-4 py-1.5 text-xs font-semibold border transition
+            ${flaggedOnly
+              ? "bg-red-600 text-white border-red-600"
+              : "border-slate-200 text-slate-600 dark:border-blue-400/20 dark:text-blue-100/70"
+            }`}
+        >
+          🚩 Flagged only
+        </button>
+      </div>
+
+      {/* Message */}
       {msg && (
-        <div className="mt-5 rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm font-semibold text-slate-700 dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-blue-100/80">
+        <div className="mt-4 rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm font-semibold text-slate-700 dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-blue-100/80">
           {msg}
         </div>
       )}
 
+      {/* Posts list */}
       {loading ? (
-        <div className="mt-5 text-sm font-semibold text-slate-600 dark:text-blue-100/70">
-          Loading users...
-        </div>
-      ) : users.length === 0 ? (
-        <div className="mt-5 text-sm font-semibold text-slate-600 dark:text-blue-100/70">
-          No users found.
-        </div>
+        <div className="mt-5 text-sm font-semibold text-slate-500">Loading posts...</div>
+      ) : posts.length === 0 ? (
+        <div className="mt-5 text-sm font-semibold text-slate-500">No posts found.</div>
       ) : (
-        <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200 dark:border-blue-400/20">
-          <div className="grid gap-0">
-            {users.map((user) => {
-              const isCurrentUser = user._id === currentUserId;
-              const isBusy = busyId === user._id;
+        <>
+          <div className="mt-5 divide-y divide-slate-100 dark:divide-blue-400/10">
+            {posts.map((post) => {
+              const isBusy = busyId === post._id;
               return (
-                <div
-                  key={user._id}
-                  className="grid gap-3 border-b border-slate-200 bg-white/80 p-4 last:border-b-0 dark:border-blue-400/20 dark:bg-blue-950/30 md:grid-cols-[1fr_auto] md:items-center"
-                >
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <div className="truncate text-sm font-extrabold text-slate-900 dark:text-white">
-                        {user.name || "Unnamed user"}
-                      </div>
-                      <span
-                        className={`rounded-full px-2 py-1 text-xs font-extrabold ${
-                          user.role === "admin"
-                            ? "bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-200"
-                            : user.role === "blog_writer"
-                              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200"
-                            : "bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-100"
-                        }`}
-                      >
-                        {roleLabel(user.role)}
-                      </span>
-                      {isCurrentUser ? (
-                        <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-bold text-slate-600 dark:bg-blue-950/50 dark:text-blue-100/70">
-                          You
-                        </span>
-                      ) : null}
-                    </div>
+                <div key={post._id} className="py-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
 
-                    <div className="mt-1 truncate text-xs font-semibold text-slate-600 dark:text-blue-100/70">
-                      {user.email}
+                  {/* Post info */}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-sm font-extrabold text-slate-900 dark:text-white truncate">
+                        {post.title}
+                      </p>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${statusStyle(post.status)}`}>
+                        {post.status}
+                      </span>
+                      {post.isFlagged && (
+                        <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-700 dark:bg-red-500/15 dark:text-red-200">
+                          🚩 Flagged
+                        </span>
+                      )}
+                      {post.isAnonymous && (
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-600 dark:bg-blue-950/40 dark:text-blue-100/60">
+                          Anonymous
+                        </span>
+                      )}
                     </div>
-                    <div className="mt-1 text-xs font-semibold text-slate-500 dark:text-blue-100/50">
-                      Joined {formatDate(user.createdAt)}
+                    <div className="mt-1 flex flex-wrap gap-3 text-xs text-slate-500 dark:text-blue-100/50">
+                      <span>By: {post.authorId?.name || "Unknown"}</span>
+                      <span>{CATEGORY_LABELS[post.category] || post.category || "—"}</span>
+                      <span>{formatDate(post.publishedAt || post.createdAt)}</span>
+                      <span>{post.views || 0} views</span>
                     </div>
                   </div>
 
-                  <select
-                    value={user.role || "visitor"}
-                    disabled={isBusy || isCurrentUser}
-                    onChange={(event) => updateRole(user._id, event.target.value)}
-                    className="rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-xs font-extrabold text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15 disabled:cursor-not-allowed disabled:opacity-60 dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-blue-100"
-                  >
-                    {ROLES.map((role) => (
-                      <option key={role} value={role}>
-                        {isBusy ? "Saving..." : roleLabel(role)}
-                      </option>
-                    ))}
-                  </select>
+                  {/* Actions */}
+                  <div className="flex flex-wrap gap-2 shrink-0">
+                    {/* Approve */}
+                    {post.status !== "approved" && (
+                      <button
+                        type="button"
+                        disabled={isBusy}
+                        onClick={() => updatePost(post._id, { status: "approved" })}
+                        className="rounded-xl border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-bold text-green-700 hover:bg-green-100 disabled:opacity-60 dark:border-green-400/30 dark:bg-green-500/15 dark:text-green-200"
+                      >
+                        Approve
+                      </button>
+                    )}
+
+                    {/* Reject */}
+                    {post.status !== "rejected" && (
+                      <button
+                        type="button"
+                        disabled={isBusy}
+                        onClick={() => updatePost(post._id, { status: "rejected" })}
+                        className="rounded-xl border border-yellow-200 bg-yellow-50 px-3 py-1.5 text-xs font-bold text-yellow-700 hover:bg-yellow-100 disabled:opacity-60"
+                      >
+                        Reject
+                      </button>
+                    )}
+
+                    {/* Flag/Unflag */}
+                    <button
+                      type="button"
+                      disabled={isBusy}
+                      onClick={() => updatePost(post._id, { isFlagged: !post.isFlagged })}
+                      className={`rounded-xl border px-3 py-1.5 text-xs font-bold disabled:opacity-60 transition
+                        ${post.isFlagged
+                          ? "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-blue-100"
+                          : "border-red-200 bg-red-50 text-red-700 hover:bg-red-100 dark:border-red-400/30 dark:bg-red-500/15 dark:text-red-200"
+                        }`}
+                    >
+                      {post.isFlagged ? "Unflag" : "Flag"}
+                    </button>
+
+                    {/* Delete */}
+                    <button
+                      type="button"
+                      disabled={isBusy}
+                      onClick={() => deletePost(post._id)}
+                      className="rounded-xl border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100 disabled:opacity-60 dark:border-red-400/30 dark:bg-red-500/15 dark:text-red-200"
+                    >
+                      {isBusy ? "..." : "Delete"}
+                    </button>
+                  </div>
                 </div>
               );
             })}
           </div>
-        </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-4 flex items-center justify-between">
+              <button
+                type="button"
+                disabled={page <= 1 || loading}
+                onClick={() => { setPage(page - 1); load(query, statusFilter, flaggedOnly, page - 1); }}
+                className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold disabled:opacity-40 dark:border-blue-400/20"
+              >
+                ← Previous
+              </button>
+              <span className="text-xs text-slate-500 dark:text-blue-100/50">
+                Page {page} of {totalPages}
+              </span>
+              <button
+                type="button"
+                disabled={page >= totalPages || loading}
+                onClick={() => { setPage(page + 1); load(query, statusFilter, flaggedOnly, page + 1); }}
+                className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold disabled:opacity-40 dark:border-blue-400/20"
+              >
+                Next →
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
 }
-// const roles = ["visitor", "blog_writer", "admin"];
-// <select
-//   value={user.role}
-//   onChange={(e) => updateRole(user._id, e.target.value)}
-//   disabled={isBusy}
-// >
-//   <option value="visitor">Visitor</option>
-//   <option value="blog_writer">Blog Writer</option>
-//   <option value="admin">Admin</option>
-// </select>

@@ -6,7 +6,9 @@ import { ContactMessage } from "@/models/ContactMessage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
+function escapeHtml(str) {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
 function getTransportConfig() {
   if (process.env.MAILTRAP_HOST && process.env.MAILTRAP_USER && process.env.MAILTRAP_PASS) {
     return {
@@ -48,13 +50,15 @@ async function sendContactEmail({ name, email, message }) {
       from,
       to,
       replyTo: email,
-      subject: `New contact message from ${name}`,
+      subject: parsed.data.subject?.trim()
+        ? `[Nursing Nepal] ${parsed.data.subject.trim()}`
+        : `New contact message from ${name}`,
       text: `Name: ${name}\nEmail: ${email}\n\n${message}`,
       html: `
-        <h2>New contact message</h2>
-        <p><strong>Name:</strong> ${name}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p style="white-space:pre-line">${message}</p>
+  <h2>New contact message</h2>
+  <p><strong>Name:</strong> ${escapeHtml(name)}</p>
+  <p><strong>Email:</strong> ${escapeHtml(email)}</p>
+  <p style="white-space:pre-line">${escapeHtml(message)}</p>
       `,
     });
 
@@ -81,6 +85,7 @@ export async function POST(req) {
   const payload = {
     name: parsed.data.name.trim(),
     email: parsed.data.email.trim().toLowerCase(),
+    subject: parsed.data.subject?.trim() || "",  // add
     message: parsed.data.message.trim(),
   };
 

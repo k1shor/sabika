@@ -3,7 +3,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import cloudinary from "@/lib/cloudinary";
 import { requireApprovedWriter } from "@/lib/auth";
-
+import { requireUser } from "@/lib/auth";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -58,7 +58,13 @@ async function uploadBuffer(buffer, filename) {
 }
 
 export async function POST(req) {
-  const auth = await requireApprovedWriter();
+  const auth = await requireUser();
+if (!auth.ok) return NextResponse.json({ ok: false, error: "Login required" }, { status: 401 });
+
+if (auth.user.role !== "admin" && 
+    (auth.user.role !== "blog_writer" || auth.user.writerVerification?.status !== "approved")) {
+  return NextResponse.json({ ok: false, error: "Writer approval required" }, { status: 403 });
+}
   if (!auth.ok) return NextResponse.json({ ok: false, error: auth.error || "Forbidden" }, { status: 403 });
 
   const form = await req.formData().catch(() => null);
