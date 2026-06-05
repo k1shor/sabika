@@ -14,7 +14,6 @@ const PostSchema = new mongoose.Schema(
 
     // Author
     authorId:    { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    author:      { type: String, default: "Nursing Nepal" },
     isAnonymous: { type: Boolean, default: false },
 
     // Categorization
@@ -29,14 +28,29 @@ const PostSchema = new mongoose.Schema(
       default: "normal",
     },
 
-    // FIX 1: removed enum — tags are free-text, writers shouldn't be
-    // constrained to 7 hardcoded values. Validate length only.
+    // ✅ One flair from fixed list — main topic label
+    flair: {
+      type: String,
+      enum: [
+        "",
+        "tips",
+        "tricks",
+        "guidance",
+        "clinical_experience",
+        "career_journey",
+        "workplace_reality",
+        "story",
+      ],
+      default: "",
+    },
+
+    // ✅ Free text tags — specific keywords, max 5
     tags: {
       type: [String],
       default: [],
       validate: {
-        validator: (arr) => arr.every((t) => t.length <= 40),
-        message: "Each tag must be 40 characters or fewer",
+        validator: (arr) => arr.length <= 5 && arr.every((t) => t.length <= 40),
+        message: "Max 5 tags, each under 40 characters",
       },
     },
 
@@ -44,9 +58,7 @@ const PostSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: ["draft", "pending", "approved", "rejected"],
-      // FIX 2: approved by default so posts are immediately visible.
-      // Change to "pending" if you want admin review before publishing.
-      default: "approved",
+      default: "draft",
     },
     isFlagged:       { type: Boolean, default: false },
     flaggedReason:   { type: String, default: "", maxlength: 500 },
@@ -62,4 +74,5 @@ const PostSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
 export const Post = mongoose.models.Post || mongoose.model("Post", PostSchema);

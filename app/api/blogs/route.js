@@ -22,23 +22,23 @@ export async function GET(req) {
   const postType = searchParams.get("postType");
   const tag = searchParams.get("tag");
 
-  // only approved posts to public
   const filter = { status: "approved" };
   if (category) filter.category = category;
   if (postType) filter.postType = postType;
   if (tag) filter.tags = tag;
 
+  // Fetch authenticated user
+  const auth = await requireApprovedWriter();
+
+  const mine = searchParams.get("mine");
+  if (mine === "true" && auth?.user?.id) {
+    filter.authorId = auth.user.id;
+    delete filter.status; // show drafts/pending for this user
+  }
+
   const [posts, total] = await Promise.all([
-    Post.find(filter, {
-      title: 1, slug: 1, excerpt: 1, coverImage: 1,
-      tags: 1, readTime: 1, publishedAt: 1, createdAt: 1,
-      category: 1, postType: 1, isAnonymous: 1,
-      authorId: 1, likesCount: 1, views: 1,
-    })
-      .populate({
-        path: "authorId",
-        select: "name avatarUrl badge username",
-      })
+    Post.find(filter)
+      .populate({ path: "authorId", select: "name avatarUrl badge username" })
       .sort({ publishedAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
@@ -46,20 +46,12 @@ export async function GET(req) {
     Post.countDocuments(filter),
   ]);
 
-  // hide author info for anonymous posts
   const safePosts = posts.map((p) => ({
     ...p,
-    authorId: p.isAnonymous
-      ? null
-      : p.authorId,
+    authorId: p.isAnonymous ? null : p.authorId,
     authorLabel: p.isAnonymous ? "Anonymous Nurse" : undefined,
   }));
 
-  const mine = searchParams.get("mine");
-  if (mine === "true" && auth?.user?.id) {
-    filter.authorId = auth.user.id;
-    delete filter.status; // show their own drafts/pending too
-  }
   return NextResponse.json({
     ok: true,
     posts: safePosts,

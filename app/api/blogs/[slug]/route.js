@@ -17,8 +17,8 @@ export async function GET(_req, { params }) {
 
   await dbConnect();
 
-  const post = await Post.findOne({ slug, status: "approved" }) // ❌ missing status filter
-    .populate("authorId", "name avatarUrl badge username bio") // ❌ missing populate
+  const post = await Post.findOne({ slug: s, status: "approved" })
+    .populate("authorId", "name avatarUrl badge username bio")
     .lean();
 
   if (!post) {
@@ -26,7 +26,7 @@ export async function GET(_req, { params }) {
   }
 
   // increment view count
-  await Post.updateOne({ _id: post._id }, { $inc: { views: 1 } }); // ❌ missing
+  await Post.updateOne({ _id: post._id }, { $inc: { views: 1 } });
 
   // anonymous protection
   const safePost = {

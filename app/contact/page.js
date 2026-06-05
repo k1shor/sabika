@@ -13,14 +13,7 @@ function SocialButton({ href, label, Icon }) {
       target="_blank"
       rel="noreferrer"
       aria-label={label}
-      className="group inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white/70 px-4 py-2 text-sm font-extrabold text-slate-800 shadow-sm
-      hover:bg-white hover:border-blue-300 hover:shadow-md
-      focus:outline-none focus:ring-4 focus:ring-blue-500/15
-      transition
-      dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-white
-      dark:hover:bg-blue-950/45 dark:hover:border-blue-400/45
-      dark:hover:shadow-[0_10px_30px_rgba(37,99,235,0.18)]
-      dark:focus:ring-blue-400/20"
+      className="group inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white/70 px-4 py-2 text-sm font-extrabold text-slate-800 shadow-sm hover:bg-white hover:border-blue-300 hover:shadow-md transition dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-white dark:hover:bg-blue-950/45"
     >
       <Icon className="h-5 w-5 text-blue-700 group-hover:text-red-500 transition dark:text-blue-200 dark:group-hover:text-red-300" />
       <span>{label}</span>
@@ -56,24 +49,24 @@ function YouTubeIcon(props) {
 
 export default function ContactPage() {
   const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState(null);
+  const [msg, setMsg]         = useState(null);  // { text, ok }
 
   const submit = async (e) => {
     e.preventDefault();
     setMsg(null);
     setLoading(true);
 
-    const form = new FormData(e.target);
+    const form    = new FormData(e.target);
     const payload = {
-      name: String(form.get("name") || ""),
-      email: String(form.get("email") || ""),
-      message: String(form.get("message") || ""),
+      name:    String(form.get("name")    || "").trim(),
+      email:   String(form.get("email")   || "").trim(),
+      message: String(form.get("message") || "").trim(),
     };
 
-    const res = await fetch("/api/contact", {
-      method: "POST",
+    const res  = await fetch("/api/contact", {
+      method:  "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body:    JSON.stringify(payload),
     });
 
     const data = await res.json().catch(() => null);
@@ -81,96 +74,98 @@ export default function ContactPage() {
 
     if (data?.ok) {
       e.target.reset();
-      setMsg(data.message || "Message sent successfully.");
+      setMsg({ text: "✓ Message sent! We'll get back to you soon.", ok: true });
     } else {
-      setMsg(data?.error || "Failed to send. Please check inputs.");
+      setMsg({ text: data?.error || "Failed to send. Please check your inputs.", ok: false });
     }
   };
 
   return (
     <Container>
       <div className="grid gap-6 md:grid-cols-2">
+
+        {/* Left — contact info */}
         <div className="rounded-3xl border border-slate-200 bg-white/70 p-8 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25">
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white md:text-4xl">
             Contact
           </h1>
-
-          <p className="mt-3 text-slate-600 leading-relaxed dark:text-blue-100/75">
-            For nursing topics, website support, or collaboration, reach out anytime. We’ll respond as soon as possible.
+          <p className="mt-3 leading-relaxed text-slate-600 dark:text-blue-100/75">
+            For nursing topics, website support, or collaboration, reach out anytime. We will respond as soon as possible.
           </p>
 
           <div className="mt-6 grid gap-3 text-sm font-semibold text-slate-700 dark:text-blue-100/80">
             <a
               href="mailto:support@nursingnepal.com"
-              className="rounded-2xl border border-slate-200 bg-white/70 px-4 py-3 shadow-sm
-              hover:bg-white hover:border-blue-300 transition
-              dark:border-blue-400/20 dark:bg-blue-950/30 dark:hover:bg-blue-950/45 dark:hover:border-blue-400/45"
+              className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white/70 px-4 py-3 shadow-sm transition hover:border-blue-300 hover:bg-white dark:border-blue-400/20 dark:bg-blue-950/30"
             >
-              Email: support@nursingnepal.com
+              <span className="text-lg">📧</span>
+              support@nursingnepal.com
             </a>
-
             <a
               href="tel:+9779800000000"
-              className="rounded-2xl border border-slate-200 bg-white/70 px-4 py-3 shadow-sm
-              hover:bg-white hover:border-blue-300 transition
-              dark:border-blue-400/20 dark:bg-blue-950/30 dark:hover:bg-blue-950/45 dark:hover:border-blue-400/45"
+              className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white/70 px-4 py-3 shadow-sm transition hover:border-blue-300 hover:bg-white dark:border-blue-400/20 dark:bg-blue-950/30"
             >
-              Phone: +977 9800000000
+              <span className="text-lg">📞</span>
+              +977 9800000000
             </a>
-
-            <div className="rounded-2xl border border-slate-200 bg-white/70 px-4 py-3 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/30">
-              Location: Nepal
+            <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white/70 px-4 py-3 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/30">
+              <span className="text-lg">📍</span>
+              Nepal
             </div>
           </div>
 
           <div className="mt-6">
-            <div className="text-sm font-extrabold text-slate-900 dark:text-white">
-              Follow Nursing Nepal
-            </div>
-
+            <p className="text-sm font-extrabold text-slate-900 dark:text-white">Follow Nursing Nepal</p>
             <div className="mt-3 flex flex-wrap gap-3">
-              <SocialButton href="https://facebook.com" label="Facebook" Icon={FacebookIcon} />
+              <SocialButton href="https://facebook.com"  label="Facebook"  Icon={FacebookIcon}  />
               <SocialButton href="https://instagram.com" label="Instagram" Icon={InstagramIcon} />
-              <SocialButton href="https://youtube.com" label="YouTube" Icon={YouTubeIcon} />
+              <SocialButton href="https://youtube.com"   label="YouTube"   Icon={YouTubeIcon}   />
             </div>
           </div>
         </div>
 
+        {/* Right — form */}
         <form
           onSubmit={submit}
           className="rounded-3xl border border-slate-200 bg-white/70 p-8 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25"
         >
-          <div className="grid gap-4">
+          <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">Send a message</h2>
+          <p className="mt-1 text-sm text-slate-500 dark:text-blue-100/50">
+            We read every message and reply within 24 hours.
+          </p>
+
+          <div className="mt-5 grid gap-4">
             <div>
-              <label className="text-sm font-semibold text-slate-700 dark:text-blue-100/80">
-                Name
-              </label>
+              <label className="text-sm font-semibold text-slate-700 dark:text-blue-100/80">Name</label>
               <div className="mt-2">
-                <Input name="name" placeholder="Your name" required />
+                <Input name="name" placeholder="Your full name" required />
               </div>
             </div>
 
             <div>
-              <label className="text-sm font-semibold text-slate-700 dark:text-blue-100/80">
-                Email
-              </label>
+              <label className="text-sm font-semibold text-slate-700 dark:text-blue-100/80">Email</label>
               <div className="mt-2">
                 <Input name="email" type="email" placeholder="you@example.com" required />
               </div>
             </div>
 
             <div>
-              <label className="text-sm font-semibold text-slate-700 dark:text-blue-100/80">
-                Message
-              </label>
+              <label className="text-sm font-semibold text-slate-700 dark:text-blue-100/80">Message</label>
               <div className="mt-2">
                 <TextArea name="message" placeholder="Write your message..." required />
               </div>
             </div>
 
+            {/* ✅ Colored message — green for success, red for error */}
             {msg && (
-              <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm font-semibold text-slate-700 dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-blue-100/80">
-                {msg}
+              <div className={`flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm font-semibold
+                ${msg.ok
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-950/20 dark:text-emerald-300"
+                  : "border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-950/20 dark:text-red-300"
+                }`}
+              >
+                <span className="mt-0.5 shrink-0">{msg.ok ? "✓" : "✕"}</span>
+                <span>{msg.text}</span>
               </div>
             )}
 

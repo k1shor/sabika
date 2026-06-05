@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { dbConnect, isDbEnabled } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { User } from "@/models/User";
+import { Notification } from "@/models/Notification"; // ✅ was missing
 
 export async function PATCH(req, { params }) {
   const auth = await requireAdmin();
@@ -14,37 +15,76 @@ export async function PATCH(req, { params }) {
   const body = await req.json().catch(() => null);
   if (!body) return NextResponse.json({ ok: false, error: "Invalid body" }, { status: 400 });
 
-  const { id } = await params; // ✅ await params
+  const { id } = await params;
 
   await dbConnect();
 
-  const user = await User.findByIdAndUpdate(  // ✅ use findByIdAndUpdate to avoid validation issues
+  // ✅ self-demotion check BEFORE update
+  if (String(id) === String(auth.user.id) && body.role && body.role !== "admin") {
+    return NextResponse.json({ ok: false, error: "Cannot change your own role." }, { status: 400 });
+  }
+
+  // ✅ get old role BEFORE update so we can compare correctly
+  const existingUser = await User.findById(id).lean();
+  if (!existingUser) {
+    return NextResponse.json({ ok: false, error: "User not found" }, { status: 404 });
+  }
+
+  const oldRole = existingUser.role;
+
+  // build update fields
+  const fields = {};
+
+  if (body.role && ["visitor", "blog_writer", "admin"].includes(body.role)) {
+    fields.role    = body.role;
+    fields.isAdmin = body.role === "admin";
+  }
+
+  if (typeof body.isBanned === "boolean") {
+    fields.isBanned     = body.isBanned;
+    fields.bannedAt     = body.isBanned ? new Date() : null;
+    fields.bannedReason = body.bannedReason || "";
+  }
+
+  const user = await User.findByIdAndUpdate(
     id,
-    (() => {
-      const fields = {};
-
-      // prevent admin demoting themselves
-      if (body.role && ["visitor", "blog_writer", "admin"].includes(body.role)) {
-        fields.role    = body.role;
-        fields.isAdmin = body.role === "admin";
-      }
-
-      if (typeof body.isBanned === "boolean") {
-        fields.isBanned    = body.isBanned;
-        fields.bannedAt    = body.isBanned ? new Date() : null;
-        fields.bannedReason = body.bannedReason || "";
-      }
-
-      return { $set: fields };
-    })(),
+    { $set: fields },
     { new: true, runValidators: false }
   ).lean();
 
-  if (!user) return NextResponse.json({ ok: false, error: "User not found" }, { status: 404 });
+  if (!user) {
+    return NextResponse.json({ ok: false, error: "User not found" }, { status: 404 });
+  }
 
-  // prevent admin demoting themselves
-  if (String(user._id) === String(auth.user.id) && body.role && body.role !== "admin") {
-    return NextResponse.json({ ok: false, error: "Cannot change your own role." }, { status: 400 });
+  // ✅ compare old role vs new role correctly
+  if (body.role && body.role !== oldRole) {
+    try {
+      await Notification.create({
+        userId:  user._id,
+        actorId: auth.user.id,
+        type:    "system",
+        message: `Your account role has been updated to ${body.role}.`,
+      });
+    } catch (err) {
+      console.error("Notification failed:", err.message);
+      // don't fail the whole request if notification fails
+    }
+  }
+
+  // notify on ban/unban too
+  if (typeof body.isBanned === "boolean" && body.isBanned !== existingUser.isBanned) {
+    try {
+      await Notification.create({
+        userId:  user._id,
+        actorId: auth.user.id,
+        type:    "system",
+        message: body.isBanned
+          ? "Your account has been suspended. Contact support for more information."
+          : "Your account suspension has been lifted. Welcome back!",
+      });
+    } catch (err) {
+      console.error("Ban notification failed:", err.message);
+    }
   }
 
   return NextResponse.json({
