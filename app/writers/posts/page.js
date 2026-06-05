@@ -230,12 +230,12 @@ export default function WriterPostsPage() {
     }
   };
 
-  const deletePost = async (id) => {
+  const deletePost = async (slug) => {
     if (!confirm("Delete this post?")) return;
     setBusy(true);
     setMessage(null);
     setError(null);
-    const res  = await fetch(`/api/blogs/${id}`, { method: "DELETE" }); // adjust if needed
+    const res  = await fetch(`/api/blogs/${slug}`, { method: "DELETE" });
     const data = await res.json().catch(() => null);
     setBusy(false);
     if (!data?.ok) { setError(data?.error || "Delete failed."); return; }
@@ -570,7 +570,7 @@ export default function WriterPostsPage() {
                         <button
                           type="button"
                           disabled={busy}
-                          onClick={() => deletePost(post._id)}
+                          onClick={() => deletePost(post.slug)}
                           className="shrink-0 rounded-xl border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-extrabold text-red-700 transition hover:bg-red-100 disabled:opacity-60 dark:border-red-400/30 dark:bg-red-500/15 dark:text-red-200"
                         >
                           Delete
