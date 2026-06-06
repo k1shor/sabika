@@ -21,10 +21,21 @@ function formatDate(value) {
 }
 
 export default function BlogCard({ post }) {
-  const authorName  = post.isAnonymous ? "Anonymous" : (post.authorId?.name || "Nursing Nepal");
-  const authorInitial = authorName[0]?.toUpperCase() || "N";
-  const typeColor   = POST_TYPE_COLORS[post.postType] || "";
-  const tags        = Array.isArray(post.tags) ? post.tags : [];
+  // ✅ author display logic — 3 cases
+  const authorName = post.isOfficialPost
+    ? "Nursing Nepal"                        // admin post
+    : post.isAnonymous
+      ? "Anonymous Nurse"                    // anonymous writer post
+      : (post.authorId?.name || "Unknown");  // normal writer post
+
+  const authorInitial = post.isOfficialPost
+    ? "N"
+    : post.isAnonymous
+      ? "?"
+      : (authorName[0]?.toUpperCase() || "N");
+
+  const typeColor = POST_TYPE_COLORS[post.postType] || "";
+  const tags      = Array.isArray(post.tags) ? post.tags : [];
 
   return (
     <Link
@@ -54,6 +65,11 @@ export default function BlogCard({ post }) {
           {post.postType && post.postType !== "normal" && (
             <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${typeColor}`}>
               {post.postType.replace(/_/g, " ")}
+            </span>
+          )}
+          {post.flair && (
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[10px] font-bold text-slate-500 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400">
+              {post.flair.replace(/_/g, " ")}
             </span>
           )}
           <span className="ml-auto text-[10px] font-semibold text-slate-400 dark:text-slate-500">
@@ -90,8 +106,15 @@ export default function BlogCard({ post }) {
         {/* Bottom row — author + views + read more */}
         <div className="mt-4 flex items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-2 min-w-0">
-            {/* Author avatar */}
-            {!post.isAnonymous && post.authorId?.avatarUrl ? (
+
+            {/* ✅ Author avatar — 3 cases */}
+            {post.isOfficialPost ? (
+              // Official Nursing Nepal post — show logo/site icon
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white">
+                N
+              </div>
+            ) : !post.isAnonymous && post.authorId?.avatarUrl ? (
+              // Normal writer with avatar
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={post.authorId.avatarUrl}
@@ -99,14 +122,18 @@ export default function BlogCard({ post }) {
                 className="h-6 w-6 rounded-full object-cover shrink-0"
               />
             ) : (
+              // Anonymous or no avatar
               <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-blue-500 to-indigo-600 text-[10px] font-bold text-white">
-                {post.isAnonymous ? "?" : authorInitial}
+                {authorInitial}
               </div>
             )}
+
             <span className="text-xs font-semibold text-slate-500 truncate dark:text-slate-400">
               {authorName}
             </span>
-            {post.authorId?.badge && !post.isAnonymous && (
+
+            {/* Badge — only for real non-anonymous writers */}
+            {!post.isOfficialPost && !post.isAnonymous && post.authorId?.badge && (
               <span className="shrink-0 rounded-full bg-blue-50 px-1.5 py-0.5 text-[9px] font-bold text-blue-600 dark:bg-blue-950/30 dark:text-blue-400">
                 {post.authorId.badge.replace(/_/g, " ")}
               </span>
@@ -114,7 +141,6 @@ export default function BlogCard({ post }) {
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
-            {/* Views */}
             {post.views > 0 && (
               <span className="flex items-center gap-1 text-[10px] text-slate-400">
                 <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -123,7 +149,6 @@ export default function BlogCard({ post }) {
                 {post.views}
               </span>
             )}
-            {/* Read more */}
             <span className="flex items-center gap-1 text-xs font-bold text-blue-600 transition group-hover:gap-2 dark:text-blue-400">
               Read
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

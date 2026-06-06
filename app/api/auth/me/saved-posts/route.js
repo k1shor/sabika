@@ -1,52 +1,78 @@
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { dbConnect } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { SavedPost } from "@/models/SavedPost";
 
 export async function GET() {
-  const auth = await requireUser();
-  if (!auth.ok) return NextResponse.json({ ok: false, error: "Login required" }, { status: 401 });
+  try {
+    const auth = await requireUser();
+    if (!auth.ok) return NextResponse.json({ ok: false, error: "Login required" }, { status: 401 });
 
-  await dbConnect();
+    await dbConnect();
 
-  const posts = await SavedPost.find({ userId: auth.user.id })
-  .populate("postId", "title excerpt slug coverImage category tags isAnonymous publishedAt")
-  .sort({ createdAt: -1 })
-  .lean();
+    const posts = await SavedPost.find({ userId: auth.user.id })
+      .populate("postId", "title excerpt slug coverImage category tags isAnonymous publishedAt")
+      .sort({ createdAt: -1 })
+      .lean();
 
-// filter out any saved posts where postId was deleted
-const validPosts = posts.filter((p) => p.postId !== null);
+    const validPosts = posts.filter((p) => p.postId !== null);
+    return NextResponse.json({ ok: true, posts: validPosts });
 
-return NextResponse.json({ ok: true, posts: validPosts });
+  } catch (err) {
+    console.error("SavedPost GET error:", err.message);
+    return NextResponse.json({ ok: false, error: err.message }, { status: 500 });
+  }
 }
+
 export async function POST(req) {
-  const auth = await requireUser();
-  if (!auth.ok) return NextResponse.json({ ok: false, error: "Login required" }, { status: 401 });
+  try {
+    const auth = await requireUser();
+    if (!auth.ok) return NextResponse.json({ ok: false, error: "Login required" }, { status: 401 });
 
-  const { postId } = await req.json().catch(() => ({}));
-  if (!postId) return NextResponse.json({ ok: false, error: "postId required" }, { status: 400 });
+    const { postId } = await req.json().catch(() => ({}));
+    if (!postId) return NextResponse.json({ ok: false, error: "postId required" }, { status: 400 });
 
-  await dbConnect();
+    // ✅ validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(postId)) {
+      return NextResponse.json({ ok: false, error: "Invalid post ID" }, { status: 400 });
+    }
 
-  await SavedPost.findOneAndUpdate(
-    { userId: auth.user.id, postId },
-    { userId: auth.user.id, postId },
-    { upsert: true, new: true }
-  );
+    await dbConnect();
 
-  return NextResponse.json({ ok: true });
+    await SavedPost.findOneAndUpdate(
+      { userId: auth.user.id, postId },
+      { userId: auth.user.id, postId },
+      { upsert: true, returnDocument: "after" }
+    );
+    return NextResponse.json({ ok: true });
+
+  } catch (err) {
+    console.error("SavedPost POST error:", err.message);
+    return NextResponse.json({ ok: false, error: err.message }, { status: 500 });
+  }
 }
 
 export async function DELETE(req) {
-  const auth = await requireUser();
-  if (!auth.ok) return NextResponse.json({ ok: false, error: "Login required" }, { status: 401 });
+  try {
+    const auth = await requireUser();
+    if (!auth.ok) return NextResponse.json({ ok: false, error: "Login required" }, { status: 401 });
 
-  const { postId } = await req.json().catch(() => ({}));
-  if (!postId) return NextResponse.json({ ok: false, error: "postId required" }, { status: 400 });
+    const { postId } = await req.json().catch(() => ({}));
+    if (!postId) return NextResponse.json({ ok: false, error: "postId required" }, { status: 400 });
 
-  await dbConnect();
+    // ✅ validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(postId)) {
+      return NextResponse.json({ ok: false, error: "Invalid post ID" }, { status: 400 });
+    }
 
-  await SavedPost.findOneAndDelete({ userId: auth.user.id, postId });
+    await dbConnect();
 
-  return NextResponse.json({ ok: true });
+    await SavedPost.findOneAndDelete({ userId: auth.user.id, postId });
+    return NextResponse.json({ ok: true });
+
+  } catch (err) {
+    console.error("SavedPost DELETE error:", err.message);
+    return NextResponse.json({ ok: false, error: err.message }, { status: 500 });
+  }
 }

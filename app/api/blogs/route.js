@@ -2,54 +2,61 @@ import { NextResponse } from "next/server";
 import { DUMMY_POSTS } from "@/lib/dummy";
 import { dbConnect, isDbEnabled } from "@/lib/db";
 import { Post } from "@/models/Post";
-import { requireApprovedWriter } from "@/lib/auth";
+import { getAuthUser, requireApprovedWriter } from "@/lib/auth";
 import { PostCreateSchema } from "@/lib/validators";
 import { Follow } from "@/models/Follow";
 import { Notification } from "@/models/Notification";
 
 export async function GET(req) {
   if (!isDbEnabled()) {
-    const posts = (DUMMY_POSTS || []).map((p) => ({ ...p }));
-    return NextResponse.json({ ok: true, posts });
+    return NextResponse.json({ ok: true, posts: DUMMY_POSTS || [] });
   }
 
   await dbConnect();
 
   const { searchParams } = new URL(req.url);
-  const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
-  const limit = Math.min(20, parseInt(searchParams.get("limit") || "10"));
+  const page     = Math.max(1, parseInt(searchParams.get("page")  || "1"));
+  const limit    = Math.min(20, parseInt(searchParams.get("limit") || "10"));
   const category = searchParams.get("category");
   const postType = searchParams.get("postType");
-  const tag = searchParams.get("tag");
+  const tag      = searchParams.get("tag");
+  const mine     = searchParams.get("mine");
 
   const filter = { status: "approved" };
   if (category) filter.category = category;
   if (postType) filter.postType = postType;
-  if (tag) filter.tags = tag;
+  if (tag)      filter.tags     = tag;
 
-  // Fetch authenticated user
-  const auth = await requireApprovedWriter();
-
-  const mine = searchParams.get("mine");
-  if (mine === "true" && auth?.user?.id) {
-    filter.authorId = auth.user.id;
-    delete filter.status; // show drafts/pending for this user
+  // mine=true — show own posts regardless of status
+  if (mine === "true") {
+    const authUser = await getAuthUser();
+    if (authUser?.id) {
+      filter.authorId = authUser.id;
+      delete filter.status;
+    }
   }
 
   const [posts, total] = await Promise.all([
-    Post.find(filter)
-      .populate({ path: "authorId", select: "name avatarUrl badge username" })
-      .sort({ publishedAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .lean(),
+    Post.find(filter, {
+      title: 1, slug: 1, excerpt: 1, coverImage: 1,
+      tags: 1, flair: 1, readTime: 1, publishedAt: 1,
+      category: 1, postType: 1, isAnonymous: 1,
+      isOfficialPost: 1,   // ✅ added
+      authorId: 1, likesCount: 1, views: 1, status: 1,
+    })
+      .populate({ path: "authorId", select: "name avatarUrl badge username" }) // ✅ was missing
+      .sort({ publishedAt: -1 })                                                // ✅ was missing
+      .skip((page - 1) * limit)                                                 // ✅ was missing
+      .limit(limit)                                                              // ✅ was missing
+      .lean(),                                                                   // ✅ was missing
     Post.countDocuments(filter),
   ]);
 
+  // ✅ use isOfficialPost not authorId.role
   const safePosts = posts.map((p) => ({
     ...p,
     authorId: p.isAnonymous ? null : p.authorId,
-    authorLabel: p.isAnonymous ? "Anonymous Nurse" : undefined,
+    // no need for authorLabel — BlogCard handles display logic itself
   }));
 
   return NextResponse.json({
@@ -82,7 +89,11 @@ export async function POST(req) {
 
   const parsed = PostCreateSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ ok: false, error: "Invalid data" }, { status: 400 });
+    return NextResponse.json({
+      ok: false,
+      error: "Invalid data",
+      fields: parsed.error.flatten().fieldErrors, // ✅ field-wise errors
+    }, { status: 400 });
   }
 
   if (!isDbEnabled()) {
@@ -92,26 +103,29 @@ export async function POST(req) {
   await dbConnect();
 
   const isAutoApproved = parsed.data.postType !== "reality_check";
+
   const created = await Post.create({
     ...parsed.data,
-    authorId: auth.user.id,
-    status: isAutoApproved ? "approved" : "pending",        // auto approve verified writers
-    publishedAt: isAutoApproved ? new Date() : undefined,
+    authorId:       auth.user.id,
+    isOfficialPost: false, // ✅ writer posts are never official
+    status:         isAutoApproved ? "approved" : "pending",
+    publishedAt:    isAutoApproved ? new Date() : undefined,
   });
+
   const followers = await Follow.find({ writerId: auth.user.id }).lean();
-  // NOW notify followers immediately — this makes sense
   if (isAutoApproved && followers.length > 0) {
     await Notification.insertMany(
       followers.map((follow) => ({
-        userId: follow.followerId,
-        actorId: auth.user.id,   // fixed from writerId
-        type: "new_post",
-        postId: created._id,
+        userId:   follow.followerId,
+        actorId:  auth.user.id,
+        type:     "new_post",
+        postId:   created._id,
         postSlug: created.slug,
-        message: `${auth.user.name} published: ${created.title}`,
-        read: false,
+        message:  `${auth.user.name} published: ${created.title}`,
+        read:     false,
       }))
     );
   }
+
   return NextResponse.json({ ok: true, post: created }, { status: 201 });
 }

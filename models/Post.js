@@ -13,8 +13,9 @@ const PostSchema = new mongoose.Schema(
     images:     { type: [String], default: [] },
 
     // Author
-    authorId:    { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    isAnonymous: { type: Boolean, default: false },
+    authorId:       { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    isAnonymous:    { type: Boolean, default: false },
+    isOfficialPost: { type: Boolean, default: false }, // ✅ admin posts show as "Nursing Nepal"
 
     // Categorization
     category: {
@@ -28,23 +29,14 @@ const PostSchema = new mongoose.Schema(
       default: "normal",
     },
 
-    // ✅ One flair from fixed list — main topic label
+    // Flair
     flair: {
       type: String,
-      enum: [
-        "",
-        "tips",
-        "tricks",
-        "guidance",
-        "clinical_experience",
-        "career_journey",
-        "workplace_reality",
-        "story",
-      ],
+      enum: ["", "tips", "tricks", "guidance", "clinical_experience", "career_journey", "workplace_reality", "story"],
       default: "",
     },
 
-    // ✅ Free text tags — specific keywords, max 5
+    // Free text tags — max 5
     tags: {
       type: [String],
       default: [],
@@ -55,11 +47,7 @@ const PostSchema = new mongoose.Schema(
     },
 
     // Moderation
-    status: {
-      type: String,
-      enum: ["draft", "pending", "approved", "rejected"],
-      default: "draft",
-    },
+    status:          { type: String, enum: ["draft", "pending", "approved", "rejected"], default: "draft" },
     isFlagged:       { type: Boolean, default: false },
     flaggedReason:   { type: String, default: "", maxlength: 500 },
     rejectionReason: { type: String, default: "", maxlength: 500 },

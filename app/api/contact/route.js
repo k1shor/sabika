@@ -99,9 +99,8 @@ export async function POST(req) {
 
   return NextResponse.json({
     ok: true,
-    message: emailResult.sent
-      ? "Message sent successfully."
-      : "Message saved. Email notification is not configured yet.",
+    // ✅ don't mention email at all — user doesn't need to know
+    message: "Thank you! Your message has been received. We will get back to you soon.",
     emailSent: emailResult.sent,
     id: String(saved._id),
   });
