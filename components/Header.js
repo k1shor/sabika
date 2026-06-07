@@ -9,11 +9,11 @@ import Button from "./Button";
 
 const THEME_EVENT = "nursing-theme-change";
 const NAV_ITEMS = [
-  { href: "/",        label: "Home"     },
-  { href: "/about",   label: "About"    },
-  { href: "/blogs",   label: "Articles" },
-  { href: "/faq",     label: "FAQ"      },
-  { href: "/contact", label: "Contact"  },
+  { href: "/", label: "Home" },
+  { href: "/about", label: "About" },
+  { href: "/blogs", label: "Articles" },
+  { href: "/faq", label: "FAQ" },
+  { href: "/contact", label: "Contact" },
 ];
 
 // ─── Theme helpers ────────────────────────────────────────────────────────────
@@ -27,24 +27,24 @@ function getSystemTheme() {
   if (typeof window === "undefined" || !window.matchMedia) return "light";
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
-function getThemeSnapshot()       { return getSavedTheme() || getSystemTheme(); }
+function getThemeSnapshot() { return getSavedTheme() || getSystemTheme(); }
 function getServerThemeSnapshot() { return "light"; }
 function applyTheme(mode) {
   if (typeof document === "undefined") return;
   document.documentElement.classList.toggle("dark", mode === "dark");
 }
 function subscribeTheme(callback) {
-  if (typeof window === "undefined") return () => {};
+  if (typeof window === "undefined") return () => { };
   const mq = window.matchMedia("(prefers-color-scheme: dark)");
-  const onThemeChange  = () => callback();
+  const onThemeChange = () => callback();
   const onSystemChange = () => { if (!getSavedTheme()) callback(); };
   window.addEventListener(THEME_EVENT, onThemeChange);
-  window.addEventListener("storage",   onThemeChange);
+  window.addEventListener("storage", onThemeChange);
   if (mq?.addEventListener) mq.addEventListener("change", onSystemChange);
   else if (mq?.addListener) mq.addListener(onSystemChange);
   return () => {
     window.removeEventListener(THEME_EVENT, onThemeChange);
-    window.removeEventListener("storage",   onThemeChange);
+    window.removeEventListener("storage", onThemeChange);
     if (mq?.removeEventListener) mq.removeEventListener("change", onSystemChange);
     else if (mq?.removeListener) mq.removeListener(onSystemChange);
   };
@@ -55,7 +55,7 @@ function getInitials(name) {
   return name.trim().split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 }
 function getRoleLabel(role) {
-  if (role === "admin")       return "Admin";
+  if (role === "admin") return "Admin";
   if (role === "blog_writer") return "Blog Writer";
   return "Visitor";
 }
@@ -88,12 +88,20 @@ function DesktopNavLink({ href, label }) {
 // ─── Desktop nav ──────────────────────────────────────────────────────────────
 
 function DesktopNav({ isAdmin, canApplyAsWriter, canWritePosts }) {
-  const allItems = [
+  const adminItems = [
+    { href: "/", label: "Home" },
+    { href: "/about", label: "About" },
+    { href: "/blogs", label: "Articles" },
+    { href: "/faq", label: "FAQ" },
+    { href: "/admin/dashboard", label: "Admin Dashboard" },
+  ];
+  const visitorItems = [
     ...NAV_ITEMS,
-    ...(isAdmin        ? [{ href: "/admin",          label: "Admin"        }] : []),
-    ...(canWritePosts  ? [{ href: "/writers/posts",  label: "My Posts"     }] : []),
+    ...(canWritePosts ? [{ href: "/writers/posts", label: "My Posts" }] : []),
     ...(canApplyAsWriter ? [{ href: "/apply-writer", label: "Apply Writer" }] : []),
   ];
+
+  const allItems = isAdmin ? adminItems : visitorItems;
 
   return (
     <nav className="hidden md:flex items-center gap-6">
@@ -131,8 +139,8 @@ function MobileNavLink({ href, label, onClick }) {
 
 function AvatarDropdown({ user, onLogout }) {
   const [open, setOpen] = useState(false);
-  const ref             = useRef(null);
-  const canWritePosts   =
+  const ref = useRef(null);
+  const canWritePosts =
     user?.role === "admin" ||
     (user?.role === "blog_writer" && user?.writerVerification?.status === "approved");
 
@@ -145,11 +153,11 @@ function AvatarDropdown({ user, onLogout }) {
   }, []);
 
   const menuItems = [
-    { href: "/profile",        icon: UserIcon,     label: "My Profile"   },
-    { href: "/saved",          icon: BookmarkIcon, label: "My Bookmarks" },
-    { href: "/following",      icon: FollowIcon,   label: "Following"    },
+    { href: "/profile", icon: UserIcon, label: "My Profile" },
+    { href: "/saved", icon: BookmarkIcon, label: "My Bookmarks" },
+    { href: "/following", icon: FollowIcon, label: "Following" },
     ...(canWritePosts ? [{ href: "/writers/posts", icon: PenIcon, label: "My Posts" }] : []),
-    { href: "/dashboard",      icon: HomeIcon,     label: "Dashboard"    },
+    { href: "/dashboard", icon: HomeIcon, label: "Dashboard" },
   ];
 
   return (
@@ -193,6 +201,7 @@ function AvatarDropdown({ user, onLogout }) {
               </Link>
             ))}
           </div>
+         
           {/* Logout */}
           <div className="border-t border-slate-100 dark:border-blue-400/10 py-1.5">
             <button onClick={() => { setOpen(false); onLogout(); }}
@@ -210,15 +219,15 @@ function AvatarDropdown({ user, onLogout }) {
 // ─── Notification bell ────────────────────────────────────────────────────────
 
 function NotificationBell() {
-  const [open, setOpen]                   = useState(false);
+  const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading]             = useState(false);
-  const ref                               = useRef(null);
-  const unreadCount                       = notifications.filter((n) => !n.read).length;
+  const [loading, setLoading] = useState(false);
+  const ref = useRef(null);
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   const load = async () => {
     setLoading(true);
-    const res  = await fetch("/api/auth/me/notifications", { cache: "no-store" });
+    const res = await fetch("/api/auth/me/notifications", { cache: "no-store" });
     const data = await res.json().catch(() => null);
     setLoading(false);
     if (data?.ok) setNotifications(Array.isArray(data.notifications) ? data.notifications : []);
@@ -320,27 +329,27 @@ function ThemeToggle({ isDark, onToggle }) {
 
 // ─── SVG Icons ────────────────────────────────────────────────────────────────
 
-function UserIcon()     { return <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-60"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>; }
-function BookmarkIcon() { return <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-60"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>; }
-function FollowIcon()   { return <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-60"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>; }
-function PenIcon()      { return <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-60"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>; }
-function HomeIcon()     { return <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-60"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>; }
-function LogoutIcon()   { return <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-60"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>; }
-function ChevronIcon({ className }) { return <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`text-slate-400 dark:text-blue-300/50 ${className}`}><polyline points="6 9 12 15 18 9"/></svg>; }
-function BellIcon()     { return <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>; }
-function SunIcon()      { return <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>; }
-function MoonIcon()     { return <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>; }
-function MenuIcon()     { return <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>; }
-function CloseIcon()    { return <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>; }
+function UserIcon() { return <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-60"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>; }
+function BookmarkIcon() { return <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-60"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg>; }
+function FollowIcon() { return <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-60"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>; }
+function PenIcon() { return <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-60"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>; }
+function HomeIcon() { return <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-60"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>; }
+function LogoutIcon() { return <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-60"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>; }
+function ChevronIcon({ className }) { return <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`text-slate-400 dark:text-blue-300/50 ${className}`}><polyline points="6 9 12 15 18 9" /></svg>; }
+function BellIcon() { return <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>; }
+function SunIcon() { return <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" /><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" /></svg>; }
+function MoonIcon() { return <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>; }
+function MenuIcon() { return <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></svg>; }
+function CloseIcon() { return <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>; }
 
 // ─── Main Header ──────────────────────────────────────────────────────────────
 
 export default function Header() {
-  const router   = useRouter();
+  const router = useRouter();
   const pathname = usePathname();
 
-  const [meData,   setMeData]   = useState({ ok: false, user: null });
-  const [open,     setOpen]     = useState(false);
+  const [meData, setMeData] = useState({ ok: false, user: null });
+  const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const mode = useSyncExternalStore(subscribeTheme, getThemeSnapshot, getServerThemeSnapshot);
 
@@ -379,8 +388,8 @@ export default function Header() {
     router.push("/");
   };
 
-  const isDark   = mode === "dark";
-  const isAdmin  = meData?.user?.role === "admin";
+  const isDark = mode === "dark";
+  const isAdmin = meData?.user?.role === "admin";
   const verificationStatus = meData?.user?.writerVerification?.status;
   const canApplyAsWriter =
     meData?.user?.role === "blog_writer" &&
@@ -391,19 +400,27 @@ export default function Header() {
     (meData?.user?.role === "blog_writer" && verificationStatus === "approved");
   const isLoggedIn = meData?.ok && meData?.user;
 
-  const mobileNavItems = [
-    ...NAV_ITEMS,
-    ...(isAdmin          ? [{ href: "/admin",          label: "Admin"        }] : []),
-    ...(canWritePosts    ? [{ href: "/writers/posts",  label: "My Posts"     }] : []),
-    ...(canApplyAsWriter ? [{ href: "/apply-writer",   label: "Apply Writer" }] : []),
-    ...(isLoggedIn ? [
-      { href: "/profile",       label: "My Profile"    },
-      { href: "/saved",         label: "My Bookmarks"  },
-      { href: "/following",     label: "Following"     },
-      { href: "/notifications", label: "Notifications" },
-      { href: "/dashboard",     label: "Dashboard"     },
-    ] : []),
-  ];
+  const mobileNavItems = isAdmin
+    ? [
+      { href: "/", label: "Home" },
+      { href: "/about", label: "About" },
+      { href: "/blogs", label: "Articles" },
+      { href: "/faq", label: "FAQ" },
+      { href: "/writers/posts", label: "My Posts" },
+      { href: "/admin/dashboard", label: "Admin Dashboard" },
+    ]
+    : [
+      ...NAV_ITEMS,
+      ...(canWritePosts ? [{ href: "/writers/posts", label: "My Posts" }] : []),
+      ...(canApplyAsWriter ? [{ href: "/apply-writer", label: "Apply Writer" }] : []),
+      ...(isLoggedIn ? [
+        { href: "/profile", label: "My Profile" },
+        { href: "/saved", label: "My Bookmarks" },
+        { href: "/following", label: "Following" },
+        { href: "/notifications", label: "Notifications" },
+        { href: "/dashboard", label: "Dashboard" },
+      ] : []),
+    ];
 
   return (
     <header

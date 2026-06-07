@@ -72,18 +72,24 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  const auth = await requireApprovedWriter();
-  if (!auth.ok) {
+  const auth = await getAuthUser();
+if (!auth) {
+  return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+}
+// Admin bypasses writer check, writers still need approval
+if (auth.role !== "admin") {
+  const writerCheck = await requireApprovedWriter();
+  if (!writerCheck.ok) {
     return NextResponse.json(
       {
         ok: false,
-        error: auth.error || "Unauthorized",
-        next: auth.error === "Writer approval required" ? "/apply-writer" : undefined,
+        error: writerCheck.error || "Unauthorized",
+        next: writerCheck.error === "Writer approval required" ? "/apply-writer" : undefined,
       },
-      { status: auth.error === "Unauthorized" ? 401 : 403 }
+      { status: writerCheck.error === "Unauthorized" ? 401 : 403 }
     );
   }
-
+}
   const body = await req.json().catch(() => null);
   if (!body) return NextResponse.json({ ok: false, error: "Invalid body" }, { status: 400 });
 
@@ -107,7 +113,7 @@ export async function POST(req) {
   const created = await Post.create({
     ...parsed.data,
     authorId:       auth.user.id,
-    isOfficialPost: false, // ✅ writer posts are never official
+    isOfficialPost: auth.user.role === "admin",
     status:         isAutoApproved ? "approved" : "pending",
     publishedAt:    isAutoApproved ? new Date() : undefined,
   });

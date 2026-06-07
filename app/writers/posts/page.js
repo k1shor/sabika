@@ -264,6 +264,7 @@ export default function WriterPostsPage() {
             <h1 className="mt-3 text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
               My Posts
             </h1>
+            
             <p className="mt-2 text-sm font-semibold text-slate-600 dark:text-blue-100/70">
               Approved writers can publish posts. Admins can still moderate any unsafe post.
             </p>
