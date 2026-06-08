@@ -11,6 +11,7 @@ function serializeMessage(message) {
     _id: String(message._id),
     name: message.name || "",
     email: message.email || "",
+    subject: message.subject || "",
     message: message.message || "",
     emailSent: Boolean(message.emailSent),
     emailError: message.emailError || "",

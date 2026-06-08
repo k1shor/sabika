@@ -28,8 +28,10 @@ export default async function AdminDashboardPage() {
 
   await dbConnect();
 
-  const sevenDaysAgo = new Date(Date.now() - 7  * 24 * 60 * 60 * 1000);
-  const fiveWeeksAgo = new Date(Date.now() - 35 * 24 * 60 * 60 * 1000);
+  // eslint-disable-next-line react-hooks/purity
+  const now = Date.now();
+  const sevenDaysAgo = new Date(now - 7  * 24 * 60 * 60 * 1000);
+  const fiveWeeksAgo = new Date(now - 35 * 24 * 60 * 60 * 1000);
 
   const [
     totalUsers,

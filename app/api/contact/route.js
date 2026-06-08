@@ -6,14 +6,17 @@ import { ContactMessage } from "@/models/ContactMessage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-function escapeHtml(str) {
-  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 function getTransportConfig() {
   if (process.env.MAILTRAP_HOST && process.env.MAILTRAP_USER && process.env.MAILTRAP_PASS) {
     return {
       host: process.env.MAILTRAP_HOST,
-      port: Number(process.env.MAILTRAP_PORT || 2525),
+      port: Number(process.env.MAILTRAP_PORT),
       auth: {
         user: process.env.MAILTRAP_USER,
         pass: process.env.MAILTRAP_PASS,
@@ -34,7 +37,7 @@ function getTransportConfig() {
   return null;
 }
 
-async function sendContactEmail({ name, email, message }) {
+async function sendContactEmail({ name, email, subject, message }) {
   const transportConfig = getTransportConfig();
   const to = process.env.CONTACT_TO_EMAIL || process.env.GOOGLE_EMAIL_USER || process.env.MAILTRAP_TO_EMAIL;
 
@@ -50,14 +53,15 @@ async function sendContactEmail({ name, email, message }) {
       from,
       to,
       replyTo: email,
-      subject: parsed.data.subject?.trim()
-        ? `[Nursing Nepal] ${parsed.data.subject.trim()}`
+      subject: subject
+        ? `[Nursing Nepal] ${subject}`
         : `New contact message from ${name}`,
-      text: `Name: ${name}\nEmail: ${email}\n\n${message}`,
+      text: `Name: ${name}\nEmail: ${email}${subject ? `\nSubject: ${subject}` : ""}\n\n${message}`,
       html: `
   <h2>New contact message</h2>
   <p><strong>Name:</strong> ${escapeHtml(name)}</p>
   <p><strong>Email:</strong> ${escapeHtml(email)}</p>
+  ${subject ? `<p><strong>Subject:</strong> ${escapeHtml(subject)}</p>` : ""}
   <p style="white-space:pre-line">${escapeHtml(message)}</p>
       `,
     });
@@ -85,7 +89,7 @@ export async function POST(req) {
   const payload = {
     name: parsed.data.name.trim(),
     email: parsed.data.email.trim().toLowerCase(),
-    subject: parsed.data.subject?.trim() || "",  // add
+    subject: parsed.data.subject?.trim() || "",
     message: parsed.data.message.trim(),
   };
 

@@ -29,27 +29,6 @@ const PARTICLES = Array.from({ length: 18 }, (_, i) => ({
   color: i % 2 === 0 ? "#1d4ed8" : "#dc2626",
 }));
 
-// ── Animated counter ───────────────────────────────────────────────────────────
-function Counter({ to, suffix = "" }) {
-  const [count, setCount] = useState(0);
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true });
-
-  useEffect(() => {
-    if (!inView) return;
-    let start = 0;
-    const step = Math.ceil(to / 60);
-    const timer = setInterval(() => {
-      start += step;
-      if (start >= to) { setCount(to); clearInterval(timer); }
-      else setCount(start);
-    }, 20);
-    return () => clearInterval(timer);
-  }, [inView, to]);
-
-  return <span ref={ref}>{count}{suffix}</span>;
-}
-
 // ── Feature card ───────────────────────────────────────────────────────────────
 function FeatureCard({ icon, title, desc, color, index }) {
   const ref = useRef(null);
@@ -64,10 +43,6 @@ function FeatureCard({ icon, title, desc, color, index }) {
       whileHover={{ y: -6, boxShadow: "0 20px 40px -12px rgba(0,0,0,0.12)" }}
       className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white/80 p-6 backdrop-blur-sm cursor-default"
     >
-      <motion.div
-        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-        style={{ background: `radial-linear(circle at 50% 0%, ${color}10, transparent 70%)` }}
-      />
       <div className="relative z-10">
         <div
           className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-xl"
@@ -88,36 +63,23 @@ function FeatureCard({ icon, title, desc, color, index }) {
   );
 }
 
-// ── Testimonial card ───────────────────────────────────────────────────────────
-function TestimonialCard({ quote, name, role, avatar, index }) {
+// ── Who is this for card ───────────────────────────────────────────────────────
+function AudienceCard({ emoji, label, color, index }) {
   const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-50px" });
+  const inView = useInView(ref, { once: true, margin: "-40px" });
 
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, scale: 0.94 }}
+      initial={{ opacity: 0, scale: 0.92 }}
       animate={inView ? { opacity: 1, scale: 1 } : {}}
-      transition={{ duration: 0.5, delay: index * 0.12 }}
-      className="rounded-2xl border border-slate-200 bg-white/80 p-6 backdrop-blur-sm"
+      transition={{ duration: 0.45, delay: index * 0.08 }}
+      whileHover={{ y: -4 }}
+      className="flex flex-col items-center gap-2 rounded-2xl border border-slate-200 bg-white/80 p-5 text-center backdrop-blur-sm"
     >
-      <div className="flex gap-1 mb-3">
-        {[...Array(5)].map((_, i) => (
-          <svg key={i} className="h-4 w-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-          </svg>
-        ))}
-      </div>
-      <p className="text-sm text-slate-600 leading-relaxed italic">&quot;{quote}&quot;</p>
-      <div className="mt-4 flex items-center gap-3">
-        <div className="h-9 w-9 rounded-full bg-linear-to-br from-blue-400 to-blue-700 flex items-center justify-center text-white text-sm font-bold">
-          {avatar}
-        </div>
-        <div>
-          <div className="text-sm font-semibold text-slate-800">{name}</div>
-          <div className="text-xs text-slate-500">{role}</div>
-        </div>
-      </div>
+      <span className="text-3xl">{emoji}</span>
+      <span className="text-sm font-semibold text-slate-700">{label}</span>
+      <span className="h-1 w-8 rounded-full" style={{ background: color }} />
     </motion.div>
   );
 }
@@ -166,32 +128,29 @@ export default function HomePage() {
   const heroOpacity = useTransform(scrollYProgress, [0, 0.7], [1, 0]);
 
   const features = [
-    { icon: "🩺", title: "Nursing Care Tips", desc: "Practical, evidence-based guidance for patients and their families.", color: "#1d4ed8" },
-    { icon: "📚", title: "Student Support", desc: "Structured study materials tailored for nursing students across Nepal.", color: "#dc2626" },
-    { icon: "💉", title: "Clinical Procedures", desc: "Step-by-step procedure guides aligned with Nepal's healthcare standards.", color: "#1d4ed8" },
-    { icon: "🏥", title: "Health Awareness", desc: "Prevention guides and health literacy content for communities.", color: "#dc2626" },
-    { icon: "🌐", title: "Community Hub", desc: "Connect with nursing professionals and students across Nepal.", color: "#1d4ed8" },
-    { icon: "📋", title: "FAQs & Resources", desc: "Quick answers to common patient-care and academic questions.", color: "#dc2626" },
+    { icon: "📝", title: "Experience-Based Blogs", desc: "Real stories from nursing students and professionals — clinical postings, workplace realities, exam journeys.", color: "#1d4ed8" },
+    { icon: "🎓", title: "Entrance & Exam Prep", desc: "Study techniques, preparation strategies, and guidance from those who have already been through it.", color: "#dc2626" },
+    { icon: "🌏", title: "Abroad Pathways", desc: "Honest guides on NCLEX, UK, Australia, and more — written by nurses who actually made the move.", color: "#1d4ed8" },
+    { icon: "🏥", title: "Hospital Diaries", desc: "Memorable patient interactions, difficult shifts, and lessons from real hospital and clinical life.", color: "#dc2626" },
+    { icon: "🎭", title: "Anonymous Storytelling", desc: "Verified users can publish anonymously — share workplace realities and honest experiences without fear.", color: "#1d4ed8" },
+    { icon: "🤝", title: "Mentor Connect", desc: "Students can follow experienced nurses and ask career or study questions within the community.", color: "#dc2626" },
   ];
 
-  const stats = [
-    { value: 1200, suffix: "+", label: "Articles Published" },
-    { value: 8400, suffix: "+", label: "Students Helped" },
-    { value: 77, suffix:"+", label: "Districts Covered" },
-    { value: 98, suffix: "%", label: "Satisfaction Rate" },
-  ];
-
-  const testimonials = [
-    { quote: "Nursing Nepal helped me pass my board exams. The study guides are incredibly well-structured.", name: "Priya Shrestha", role: "B.Sc Nursing Student, Kathmandu", avatar: "PS" },
-    { quote: "As a rural health worker, the patient-care guides in Nepali context have been a lifesaver.", name: "Binod Rai", role: "Community Nurse, Dharan", avatar: "BR" },
-    { quote: "Finally a platform that understands the Nepal healthcare system. Highly recommended!", name: "Anita Tamang", role: "Staff Nurse, BPKIHS", avatar: "AT" },
+  const audience = [
+    { emoji: "📖", label: "Nursing Students", color: "#1d4ed8" },
+    { emoji: "✅", label: "Entrance Exam Passers", color: "#dc2626" },
+    { emoji: "🩺", label: "Registered Nurses", color: "#1d4ed8" },
+    { emoji: "🏨", label: "Working Nurses in Nepal", color: "#dc2626" },
+    { emoji: "✈️", label: "Nurses Studying Abroad", color: "#1d4ed8" },
+    { emoji: "🌐", label: "Nurses Working Abroad", color: "#dc2626" },
   ];
 
   const faqs = [
-    { q: "Is Nursing Nepal free to use?", a: "Yes! All articles, guides, and study materials are completely free for everyone." },
-    { q: "Who writes the content on Nursing Nepal?", a: "Our content is written and reviewed by qualified nurses, nursing educators, and healthcare professionals based in Nepal." },
-    { q: "Can I contribute articles or resources?", a: "Absolutely. We welcome contributions from nursing professionals and students. Use the Contact page to get in touch." },
-    { q: "Is the content suitable for patients and families?", a: "Yes. We write for both healthcare professionals and the general public, with clearly labeled sections for each audience." },
+    { q: "Who can publish on Nursing Nepal?", a: "Nursing students, registered nurses, and healthcare professionals. All contributors are verified by the admin to maintain trust and credibility on the platform." },
+    { q: "Can I publish anonymously?", a: "Yes. Verified users can choose to publish anonymously. Your identity stays hidden — only your general role (e.g., 'Registered Nurse') is shown. Anonymous posts are not linked to your profile." },
+    { q: "What kind of content can I share?", a: "Clinical experiences, entrance exam tips, hospital diaries, workplace realities, abroad career guides, personal nursing journeys, and more. Content is tagged by category and flair for easy discovery." },
+    { q: "Is Nursing Nepal free to use?", a: "Yes, reading all articles and resources is completely free. Anyone can browse and search content without an account." },
+    { q: "How do I become a verified contributor?", a: "Use the Contact page to get in touch with our team. We verify contributors based on their nursing background before granting publishing access." },
   ];
 
   return (
@@ -225,7 +184,7 @@ export default function HomePage() {
                     animate={{ scale: [1, 1.4, 1] }}
                     transition={{ duration: 2, repeat: Infinity }}
                   />
-                  Nursing Care & Learning Platform
+                  Nepal's Nursing Community Platform
                 </motion.div>
 
                 <motion.h1
@@ -255,8 +214,7 @@ export default function HomePage() {
                   transition={{ duration: 0.6, delay: 0.45 }}
                   className="mt-4 text-slate-600 leading-relaxed text-lg max-w-md"
                 >
-                  Your trusted place for nursing knowledge, patient-care guidance, and professional growth.
-                  Explore health articles, nursing tips, and practical information designed for Nepal.
+                  A community-driven platform where nursing students and professionals share real experiences, study guidance, clinical stories, and career journeys — honestly and safely.
                 </motion.p>
 
                 <motion.div
@@ -269,7 +227,7 @@ export default function HomePage() {
                     <Link href="/blogs"><Button>Explore Articles →</Button></Link>
                   </motion.div>
                   <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-                    <Link href="/contact"><SecondaryButton>Contact Us</SecondaryButton></Link>
+                    <Link href="/contact"><SecondaryButton>Become a Contributor</SecondaryButton></Link>
                   </motion.div>
                 </motion.div>
 
@@ -280,7 +238,7 @@ export default function HomePage() {
                   transition={{ delay: 0.7 }}
                   className="mt-8 flex flex-wrap gap-4 text-xs text-slate-500"
                 >
-                  {["✓ Free for all", "✓ Nepal-focused", "✓ Reviewed by nurses"].map(t => (
+                  {["✓ Verified contributors", "✓ Anonymous publishing", "✓ Free to read"].map(t => (
                     <span key={t} className="flex items-center gap-1 font-medium">{t}</span>
                   ))}
                 </motion.div>
@@ -297,10 +255,10 @@ export default function HomePage() {
 
                 <ul className="mt-5 space-y-3.5">
                   {[
-                    { color: "bg-blue-600", text: "Nursing care tips for patients and families" },
-                    { color: "bg-red-500", text: "Study support for nursing students" },
-                    { color: "bg-blue-600", text: "Basic health awareness and prevention guides" },
-                    { color: "bg-red-500", text: "Articles, FAQs, and community support" },
+                    { color: "bg-blue-600", text: "Real experiences from nurses and students across Nepal" },
+                    { color: "bg-red-500", text: "Entrance exam and licensing exam preparation guides" },
+                    { color: "bg-blue-600", text: "Honest stories from hospital and clinical life" },
+                    { color: "bg-red-500", text: "Career pathways for working or studying abroad" },
                   ].map(({ color, text }, i) => (
                     <motion.li
                       key={i}
@@ -326,7 +284,7 @@ export default function HomePage() {
                     <div className="text-sm font-bold text-slate-800">Our goal</div>
                   </div>
                   <div className="mt-2 text-sm text-slate-600 leading-relaxed">
-                    Improve healthcare awareness and nursing excellence across Nepal through simple, practical resources.
+                    Build a trusted space where the nursing community can share knowledge, support each other, and grow together — through both professional credibility and honest, private storytelling.
                   </div>
                 </motion.div>
 
@@ -337,8 +295,8 @@ export default function HomePage() {
                   transition={{ delay: 0.85 }}
                   className="mt-5 flex items-center justify-between rounded-xl bg-slate-50 border border-slate-200 px-4 py-3"
                 >
-                  <span className="text-xs text-slate-500">Ready to get started?</span>
-                  <Link href="/blogs" className="text-xs font-semibold text-blue-700 hover:underline">Browse articles →</Link>
+                  <span className="text-xs text-slate-500">Want to share your story?</span>
+                  <Link href="/contact" className="text-xs font-semibold text-blue-700 hover:underline">Apply to write →</Link>
                 </motion.div>
               </motion.div>
             </div>
@@ -363,30 +321,31 @@ export default function HomePage() {
         </motion.div>
       </section>
 
-      {/* ── Stats strip ───────────────────────────────────────────────────────── */}
-      <section className="border-y border-slate-200 bg-white/80 backdrop-blur-sm py-12">
+      {/* ── Who is this for ───────────────────────────────────────────────────── */}
+      <section className="border-y border-slate-200 bg-white/80 backdrop-blur-sm py-14">
         <Container>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            {stats.map(({ value, suffix, label }, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-              >
-                <div className={`text-4xl font-extrabold tracking-tight ${i % 2 === 0 ? "text-blue-700" : "text-red-600"}`}>
-                  <Counter to={value} suffix={suffix} />
-                </div>
-                <div className="mt-1 text-sm text-slate-500 font-medium">{label}</div>
-              </motion.div>
-            ))}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-10"
+          >
+            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-500 mb-3">
+              <span className="h-1.5 w-1.5 rounded-full bg-blue-600" /> Built for
+            </div>
+            <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+              Who is <span className="text-blue-700">Nursing Nepal</span> for?
+            </h2>
+            <p className="mt-2 text-slate-500 text-sm">Anyone in the nursing journey — from first-year students to nurses working globally.</p>
+          </motion.div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+            {audience.map((a, i) => <AudienceCard key={i} {...a} index={i} />)}
           </div>
         </Container>
       </section>
 
       {/* ── Features ──────────────────────────────────────────────────────────── */}
-      <section className="py-2 relative overflow-hidden">
+      <section className="py-20 relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0 -z-10 bg-linear-to-b from-slate-50/50 to-white" />
         <Container>
           <motion.div
@@ -396,13 +355,13 @@ export default function HomePage() {
             className="text-center mb-14"
           >
             <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-500 mb-4">
-              <span className="h-1.5 w-1.5 rounded-full bg-blue-600" /> Everything you need
+              <span className="h-1.5 w-1.5 rounded-full bg-blue-600" /> What we offer
             </div>
             <h2 className="text-4xl font-extrabold text-slate-900 tracking-tight">
-              Built for <span className="text-blue-700">Nepal</span> <span className="text-red-600">Nurses</span>
+              More than a <span className="text-blue-700">blog</span>
             </h2>
             <p className="mt-3 text-slate-500 max-w-lg mx-auto">
-              From clinical guidance to academic support, we have every angle covered.
+              Nursing Nepal combines real-world storytelling, verified expertise, and privacy-controlled publishing in one place.
             </p>
           </motion.div>
 
@@ -412,8 +371,8 @@ export default function HomePage() {
         </Container>
       </section>
 
-      {/* ── Testimonials ──────────────────────────────────────────────────────── */}
-      <section className="py-2 bg-linear-to-b from-blue-50/40 to-slate-50/30">
+      {/* ── How it works ──────────────────────────────────────────────────────── */}
+      <section className="py-20 bg-linear-to-b from-blue-50/40 to-slate-50/30">
         <Container>
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -422,19 +381,71 @@ export default function HomePage() {
             className="text-center mb-14"
           >
             <h2 className="text-4xl font-extrabold text-slate-900 tracking-tight">
-              Trusted by <span className="text-blue-700">nurses</span> nationwide
+              Verified identity, <span className="text-red-600">your choice</span> of voice
             </h2>
-            <p className="mt-3 text-slate-500">Hear from people already using Nursing Nepal.</p>
+            <p className="mt-3 text-slate-500 max-w-lg mx-auto">
+              All contributors are verified — but you decide how you appear on each post.
+            </p>
           </motion.div>
 
-          <div className="grid gap-6 md:grid-cols-3">
-            {testimonials.map((t, i) => <TestimonialCard key={i} {...t} index={i} />)}
+          <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+            {[
+              {
+                icon: "👤",
+                title: "Public Publishing",
+                color: "#1d4ed8",
+                points: [
+                  "Your name, photo, and role are visible",
+                  "Posts appear on your public profile",
+                  "Great for educational content and mentoring",
+                  "Builds your credibility in the community",
+                ],
+              },
+              {
+                icon: "🎭",
+                title: "Anonymous Publishing",
+                color: "#dc2626",
+                points: [
+                  "Your identity stays completely hidden",
+                  "Only general role shown (e.g., 'Registered Nurse')",
+                  "Post is not linked to your profile",
+                  "Safe space for honest workplace realities",
+                ],
+              },
+            ].map(({ icon, title, color, points }, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.15 }}
+                className="rounded-2xl border border-slate-200 bg-white/80 p-6 backdrop-blur-sm"
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  <div
+                    className="h-11 w-11 rounded-xl flex items-center justify-center text-xl"
+                    style={{ background: `${color}15`, border: `1.5px solid ${color}30` }}
+                  >
+                    {icon}
+                  </div>
+                  <h3 className="font-bold text-slate-800">{title}</h3>
+                </div>
+                <ul className="space-y-2.5">
+                  {points.map((p, j) => (
+                    <li key={j} className="flex items-start gap-2 text-sm text-slate-600">
+                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: color }} />
+                      {p}
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+            ))}
           </div>
         </Container>
       </section>
 
       {/* ── FAQ ───────────────────────────────────────────────────────────────── */}
-      <section className="py-2">
+      <section className="py-20">
         <Container>
           <div className="grid md:grid-cols-2 gap-16 items-start">
             <motion.div
@@ -450,7 +461,7 @@ export default function HomePage() {
                 We have <span className="text-blue-700">answers.</span>
               </h2>
               <p className="mt-4 text-slate-500 leading-relaxed">
-                Here are some of the most common questions from our community of students, nurses, and healthcare professionals.
+                Here are answers to the most common questions from our community of students, nurses, and healthcare professionals.
               </p>
 
               <motion.div
@@ -458,7 +469,7 @@ export default function HomePage() {
                 className="mt-8 rounded-2xl border border-blue-100 bg-blue-50/70 p-5"
               >
                 <div className="text-sm font-semibold text-blue-800">Still have questions?</div>
-                <p className="mt-1 text-sm text-blue-700/80">Our team responds within 24 hours on working days.</p>
+                <p className="mt-1 text-sm text-blue-700/80">Reach out — we respond on working days.</p>
                 <Link href="/contact" className="mt-3 inline-block text-sm font-bold text-blue-700 hover:underline">
                   Contact us →
                 </Link>
@@ -478,7 +489,7 @@ export default function HomePage() {
       </section>
 
       {/* ── Final CTA ─────────────────────────────────────────────────────────── */}
-      <section className="py-2 relative overflow-hidden">
+      <section className="py-24 relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0 -z-10">
           <div className="absolute inset-0 bg-linear-to-br from-blue-700 via-blue-800 to-slate-900" />
           <motion.div
@@ -508,16 +519,16 @@ export default function HomePage() {
               transition={{ type: "spring", stiffness: 200, delay: 0.1 }}
               className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-white/10 backdrop-blur text-3xl mb-6 mx-auto border border-white/20"
             >
-              🏥
+              🤝
             </motion.div>
 
             <h2 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight leading-tight">
-              Empowering nurses,<br />
-              <span className="text-red-400">one article</span> at a time.
+              Your story can help<br />
+              <span className="text-red-400">the next nurse.</span>
             </h2>
 
             <p className="mt-5 text-blue-200 max-w-lg mx-auto leading-relaxed">
-              Join thousands of nursing students and professionals who rely on Nursing Nepal every day for trusted, practical healthcare knowledge.
+              Whether you want to share what you know, learn from others, or simply find a community that understands — Nursing Nepal is your space.
             </p>
 
             <motion.div
@@ -530,20 +541,19 @@ export default function HomePage() {
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
                 <Link href="/blogs">
                   <button className="inline-flex items-center gap-2 rounded-xl bg-white px-7 py-3.5 text-sm font-bold text-blue-800 shadow-lg hover:bg-blue-50 transition-colors">
-                    Start Reading <span>→</span>
+                    Read Articles <span>→</span>
                   </button>
                 </Link>
               </motion.div>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
                 <Link href="/contact">
                   <button className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-7 py-3.5 text-sm font-bold text-white backdrop-blur hover:bg-white/20 transition-colors">
-                    Get in Touch
+                    Become a Contributor
                   </button>
                 </Link>
               </motion.div>
             </motion.div>
 
-            {/* Bottom micro-stats */}
             <motion.div
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
@@ -551,7 +561,7 @@ export default function HomePage() {
               transition={{ delay: 0.5 }}
               className="mt-12 flex flex-wrap justify-center gap-8 text-sm text-blue-300"
             >
-              {["1,200+ Articles", "8,400+ Students", "77 Districts", "Always Free"].map((t, i) => (
+              {["Verified Contributors", "Anonymous Publishing", "Free to Read", "Nepal-Focused"].map((t, i) => (
                 <span key={i} className="flex items-center gap-2">
                   <span className="h-1 w-1 rounded-full bg-blue-400" />
                   {t}

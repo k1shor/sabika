@@ -11,6 +11,15 @@ function formatDate(value) {
   return date.toLocaleString();
 }
 
+function replyHref(item) {
+  const subject = item.subject
+    ? `Re: ${item.subject}`
+    : "Re: Your Nursing Nepal message";
+  const body = `Hi ${item.name},\n\nThank you for contacting Nursing Nepal.\n\n`;
+
+  return `mailto:${encodeURIComponent(item.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
 export default function AdminContactMessagesPage() {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,6 +44,7 @@ export default function AdminContactMessagesPage() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, []);
 
@@ -92,6 +102,11 @@ export default function AdminContactMessagesPage() {
                     <a href={`mailto:${item.email}`} className="text-sm font-bold text-blue-700 hover:text-blue-600 dark:text-blue-300">
                       {item.email}
                     </a>
+                    {item.subject ? (
+                      <p className="mt-2 text-sm font-extrabold text-slate-800 dark:text-white">
+                        {item.subject}
+                      </p>
+                    ) : null}
                     <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-blue-100/55">
                       {formatDate(item.createdAt)}
                     </p>
@@ -112,6 +127,14 @@ export default function AdminContactMessagesPage() {
                     Email note: {item.emailError}
                   </p>
                 ) : null}
+                <div className="mt-4">
+                  <a
+                    href={replyHref(item)}
+                    className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white/80 px-4 py-2 text-sm font-extrabold text-slate-700 transition hover:bg-white dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-blue-100"
+                  >
+                    Reply by email
+                  </a>
+                </div>
               </div>
             ))}
           </div>

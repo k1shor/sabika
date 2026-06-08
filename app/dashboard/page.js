@@ -52,12 +52,12 @@ function getDailyQuote() {
 
 const fadeUp = {
   hidden: { opacity: 0, y: 28 },
-  show:   { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
+  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
 };
 
 const stagger = {
   hidden: {},
-  show:   { transition: { staggerChildren: 0.09 } },
+  show: { transition: { staggerChildren: 0.09 } },
 };
 
 // Nepal flag crimson + deep blue palette
@@ -120,11 +120,11 @@ function QuickStats({ role, posts }) {
 
   const stats = role === "blog_writer" ? [
     { label: "Published", value: posts.filter((p) => p.status === "approved").length, icon: "✓", color: "border-emerald-200 bg-emerald-50 dark:border-emerald-500/20 dark:bg-emerald-950/20", text: "text-emerald-700 dark:text-emerald-400" },
-    { label: "Pending",   value: posts.filter((p) => p.status === "pending").length,  icon: "⏳", color: "border-amber-200 bg-amber-50 dark:border-amber-500/20 dark:bg-amber-950/20",   text: "text-amber-700 dark:text-amber-400"   },
-    { label: "Drafts",    value: posts.filter((p) => p.status === "draft").length,    icon: "✎", color: "border-slate-200 bg-slate-50 dark:border-slate-500/20 dark:bg-slate-900/20",   text: "text-slate-600 dark:text-slate-400"   },
+    { label: "Pending", value: posts.filter((p) => p.status === "pending").length, icon: "⏳", color: "border-amber-200 bg-amber-50 dark:border-amber-500/20 dark:bg-amber-950/20", text: "text-amber-700 dark:text-amber-400" },
+    { label: "Drafts", value: posts.filter((p) => p.status === "draft").length, icon: "✎", color: "border-slate-200 bg-slate-50 dark:border-slate-500/20 dark:bg-slate-900/20", text: "text-slate-600 dark:text-slate-400" },
   ] : [
-    { label: "Total Blogs",    value: "—", icon: "📝", color: "border-red-200 bg-red-50/60 dark:border-red-500/20 dark:bg-red-950/20",   text: "text-[#DC143C] dark:text-red-400"  },
-    { label: "Total Users",    value: "—", icon: "👥", color: "border-blue-200 bg-blue-50/60 dark:border-blue-500/20 dark:bg-blue-950/20", text: "text-[#003893] dark:text-blue-400" },
+    { label: "Total Blogs", value: "—", icon: "📝", color: "border-red-200 bg-red-50/60 dark:border-red-500/20 dark:bg-red-950/20", text: "text-[#DC143C] dark:text-red-400" },
+    { label: "Total Users", value: "—", icon: "👥", color: "border-blue-200 bg-blue-50/60 dark:border-blue-500/20 dark:bg-blue-950/20", text: "text-[#003893] dark:text-blue-400" },
     { label: "Pending Review", value: "—", icon: "🔍", color: "border-amber-200 bg-amber-50/60 dark:border-amber-500/20 dark:bg-amber-950/20", text: "text-amber-700 dark:text-amber-400" },
   ];
 
@@ -214,7 +214,7 @@ function ArticleCard({ post, index }) {
             <span className="text-slate-200 dark:text-slate-700">·</span>
             <span className="text-[10px] text-slate-400">{formatDate(post.publishedAt || post.createdAt)}</span>
             <div className="ml-auto flex items-center gap-1 text-[10px] text-slate-400">
-              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
               {post.views || 0}
             </div>
           </div>
@@ -280,7 +280,7 @@ function Sidebar({ user, savedCount, recentlyViewed }) {
             <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">Saved Articles</div>
           </div>
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#DC143C]/8 text-[#DC143C] transition group-hover:bg-[#DC143C]/15 dark:bg-red-950/30 dark:text-red-400">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg>
           </div>
         </Link>
       </motion.div>
@@ -339,10 +339,10 @@ function Sidebar({ user, savedCount, recentlyViewed }) {
       >
         <p className="mb-2 px-1 text-[10px] font-extrabold uppercase tracking-widest text-slate-400">Navigate</p>
         {[
-          { href: "/following",     label: "Writers I Follow",   icon: "👥" },
-          { href: "/notifications", label: "Notifications",      icon: "🔔" },
-          { href: "/saved",         label: "Saved Posts",        icon: "🔖" },
-          { href: "/writers",       label: "Find Writers",       icon: "✍️" },
+          { href: "/following", label: "Writers I Follow", icon: "👥" },
+          { href: "/notifications", label: "Notifications", icon: "🔔" },
+          { href: "/saved", label: "Saved Posts", icon: "🔖" },
+          { href: "/writers", label: "Find Writers", icon: "✍️" },
           ...(user?.writerVerification?.status === "none" || !user?.writerVerification
             ? [{ href: "/apply-writer", label: "Become a Writer", icon: "📝" }]
             : []),
@@ -365,13 +365,13 @@ function Sidebar({ user, savedCount, recentlyViewed }) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
-  const [user,            setUser]           = useState(null);
-  const [loading,         setLoading]        = useState(true);
-  const [posts,           setPosts]          = useState([]);
-  const [myPosts,         setMyPosts]        = useState([]);
-  const [savedCount,      setSavedCount]     = useState(0);
-  const [recentlyViewed,  setRecentlyViewed] = useState([]);
-  const [postsLoading,    setPostsLoading]   = useState(true);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [posts, setPosts] = useState([]);
+  const [myPosts, setMyPosts] = useState([]);
+  const [savedCount, setSavedCount] = useState(0);
+  const [recentlyViewed, setRecentlyViewed] = useState([]);
+  const [postsLoading, setPostsLoading] = useState(true);
 
   useEffect(() => {
     // user
@@ -404,6 +404,7 @@ export default function DashboardPage() {
       .then((d) => { if (d?.ok) setSavedCount(d.posts?.length || 0); })
       .catch(() => null);
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRecentlyViewed(getRecentlyViewed());
   }, []);
 
@@ -476,7 +477,7 @@ export default function DashboardPage() {
                 className="flex items-center gap-1 text-sm font-bold text-[#DC143C] transition hover:text-[#c01232] dark:text-red-400"
               >
                 View all
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
               </Link>
             </motion.div>
 
@@ -499,10 +500,16 @@ export default function DashboardPage() {
               >
                 <div className="text-3xl mb-2">📭</div>
                 <p className="text-sm font-semibold text-slate-500">No articles published yet.</p>
-                {user.role === "blog_writer" && (
-                  <Link href="/blogs/new" className="mt-3 inline-block text-sm font-bold text-[#DC143C] hover:underline">
+                {user.role === "blog_writer" && user.writerVerification?.status === "approved" && (
+                  <Link href="/writers/posts" className="mt-3 inline-block text-sm font-bold text-[#DC143C] hover:underline">
                     Be the first to write one →
                   </Link>
+                )}
+
+                {user.role === "blog_writer" && user.writerVerification?.status === "pending" && (
+                  <p className="mt-3 text-sm font-semibold text-amber-600 dark:text-amber-400">
+                    ⏳ Your writer application is under review.
+                  </p>
                 )}
               </motion.div>
             ) : (

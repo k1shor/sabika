@@ -7,27 +7,39 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { signIn } from "next-auth/react";
+
+function FieldError({ msg }) {
+  if (!msg) return null;
+  return (
+    <p className="mt-1.5 text-xs font-semibold text-red-600 dark:text-red-400">{msg}</p>
+  );
+}
+
 export default function LoginClient() {
   const router = useRouter();
   const sp = useSearchParams();
 
   const nextUrl = useMemo(() => {
     const n = sp.get("next");
-    return n && n.startsWith("/") ? n : "/dashboard"; // default to profile
+    return n && n.startsWith("/") ? n : "/dashboard";
   }, [sp]);
-  const [googleLoading, setGoogleLoading] = useState(false);
 
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState(null);
+
+  // field-level errors
+  const [errors, setErrors] = useState({ email: null, password: null, general: null });
+
   const handleGoogle = async () => {
     setGoogleLoading(true);
     await signIn("google", {
       callbackUrl: `/api/auth/google-session?action=login`,
     });
   };
+
   const submit = async (e) => {
     e.preventDefault();
-    setMsg(null);
+    setErrors({ email: null, password: null, general: null });
     setLoading(true);
 
     const form = new FormData(e.target);
@@ -55,7 +67,22 @@ export default function LoginClient() {
       return;
     }
 
-    setMsg(data?.error || "Login failed. Please check your credentials.");
+    // Map error codes from the API to field-level messages
+    const code = data?.code;
+
+    if (code === "USER_NOT_FOUND") {
+      setErrors({ email: "No account found with this email. Please register first.", password: null, general: null });
+    } else if (code === "WRONG_PASSWORD") {
+      setErrors({ email: null, password: "Incorrect password. Please try again.", general: null });
+    } else if (code === "EMAIL_NOT_VERIFIED") {
+      setErrors({ email: null, password: null, general: "Your email is not verified. Please check your inbox and verify your account before logging in." });
+    } else if (code === "GOOGLE_ACCOUNT") {
+      setErrors({ email: "This email is registered via Google. Please use 'Login with Google' below.", password: null, general: null });
+    } else if (code === "ACCOUNT_DISABLED") {
+      setErrors({ email: null, password: null, general: "Your account has been disabled. Please contact us for support." });
+    } else {
+      setErrors({ email: null, password: null, general: data?.error || "Something went wrong. Please try again." });
+    }
   };
 
   return (
@@ -70,49 +97,71 @@ export default function LoginClient() {
           </p>
 
           <form onSubmit={submit} className="mt-6 grid gap-4">
+            {/* Email */}
             <div>
               <label className="text-sm font-semibold text-slate-700 dark:text-blue-100/80">
                 Email
               </label>
               <div className="mt-2">
-                <Input name="email" type="email" placeholder="you@example.com" required />
+                <Input
+                  name="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  required
+                  className={errors.email ? "border-red-400 focus:ring-red-300" : ""}
+                />
               </div>
+              <FieldError msg={errors.email} />
             </div>
 
+            {/* Password */}
             <div>
               <label className="text-sm font-semibold text-slate-700 dark:text-blue-100/80">
                 Password
               </label>
               <div className="mt-2">
-                <Input name="password" type="password" placeholder="Password" required />
+                <Input
+                  name="password"
+                  type="password"
+                  placeholder="Password"
+                  required
+                  className={errors.password ? "border-red-400 focus:ring-red-300" : ""}
+                />
               </div>
+              <FieldError msg={errors.password} />
             </div>
 
-            {msg && (
+            {/* General errors (not field-specific) */}
+            {errors.general && (
               <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 dark:border-red-400/20 dark:bg-red-950/30 dark:text-red-100/80">
-                {msg}
+                {errors.general}
               </div>
             )}
+
+            {/* Google OAuth error */}
             {sp.get("error") === "google_not_found" && (
               <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 dark:border-red-400/25 dark:bg-red-950/30 dark:text-red-300">
-                No account found. Please register with Google first.
+                No account found for this Google account. Please register first.
               </div>
             )}
+
             <Button type="submit" disabled={loading} className="w-full py-3">
               {loading ? "Signing in..." : "Login"}
             </Button>
+
             <div className="flex items-center gap-3">
-            <div className="h-px flex-1 bg-slate-200 dark:bg-blue-400/20" />
-            <span className="text-xs font-semibold text-slate-400 dark:text-blue-100/40">or</span>
-            <div className="h-px flex-1 bg-slate-200 dark:bg-blue-400/20" />
-          </div>
+              <div className="h-px flex-1 bg-slate-200 dark:bg-blue-400/20" />
+              <span className="text-xs font-semibold text-slate-400 dark:text-blue-100/40">or</span>
+              <div className="h-px flex-1 bg-slate-200 dark:bg-blue-400/20" />
+            </div>
+
             <button
               type="button"
               onClick={handleGoogle}
               disabled={googleLoading}
               className="flex w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition
-            hover:bg-slate-50 disabled:opacity-60
-            dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-blue-100 dark:hover:bg-blue-950/50"
+                hover:bg-slate-50 disabled:opacity-60
+                dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-blue-100 dark:hover:bg-blue-950/50"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 48 48">
                 <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
@@ -122,6 +171,7 @@ export default function LoginClient() {
               </svg>
               {googleLoading ? "Redirecting..." : "Login with Google"}
             </button>
+
             <div className="flex flex-wrap items-center justify-between gap-3 text-sm font-semibold text-slate-600 dark:text-blue-100/75">
               <span>
                 Need an account?{" "}
@@ -132,7 +182,6 @@ export default function LoginClient() {
                   Register
                 </Link>
               </span>
-
               <Link
                 className="font-extrabold text-blue-700 hover:text-red-500 transition dark:text-blue-200 dark:hover:text-red-300"
                 href="/forgot-password"

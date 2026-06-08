@@ -48,13 +48,11 @@ const OptionalUrlSchema = optionalString(z.string().url());
 const WriterPostSchema = z.object({
   title:       z.string().trim().min(3, "Title must be at least 3 characters").max(160, "Title is too long"),
   slug:        optionalString(z.string().min(3).max(200)),
-  // FIX: excerpt is now required with a minimum length
   excerpt:     z.string().trim().min(10, "Excerpt must be at least 10 characters").max(400, "Excerpt is too long"),
   coverImage:  OptionalUrlSchema,
   images:      z.array(z.string().url()).optional(),
-  // FIX: contentHtml is now required with a minimum length
   contentHtml: z.string().trim().min(10, "Post content is required"),
-  tags: z.array(z.string().trim().max(40)).min(0).optional().default([]),
+  tags:        z.array(z.string().trim().max(40)).min(0).optional().default([]),
   readTime:    optionalString(z.string().max(30)),
   category:    z.enum(
     ["entrance_pass", "nursing_student", "working_nurse", "abroad_study", "abroad_work"],
@@ -79,13 +77,35 @@ function serializePost(post) {
   };
 }
 
+// ── Helper: resolve why a writer isn't approved ──────────────────────────────
+function getWriterBlockReason(user) {
+  if (!user) return { code: "UNAUTHORIZED", status: 401 };
+
+  const vs = user.writerVerification?.status;
+
+  if (user.role !== "blog_writer") {
+    // They never applied — no writerVerification at all
+    return { code: "NOT_APPLIED", status: 403 };
+  }
+  if (vs === "pending") {
+    return { code: "APPROVAL_PENDING", status: 403 };
+  }
+  if (vs === "rejected") {
+    return { code: "APPROVAL_REJECTED", status: 403 };
+  }
+  // role is blog_writer but status isn't approved (e.g. "none" or missing)
+  return { code: "NOT_APPROVED", status: 403 };
+}
+
 export async function GET() {
   const auth = await requireApprovedWriter();
+
   if (!auth.ok) {
-    return NextResponse.json(
-      { ok: false, error: auth.error || "Forbidden" },
-      { status: auth.error === "Unauthorized" ? 401 : 403 }
-    );
+    if (auth.error === "Unauthorized") {
+      return NextResponse.json({ ok: false, code: "UNAUTHORIZED", error: "Please log in." }, { status: 401 });
+    }
+    const { code, status } = getWriterBlockReason(auth.user);
+    return NextResponse.json({ ok: false, code, error: auth.error }, { status });
   }
 
   if (!isDbEnabled()) {
@@ -104,15 +124,13 @@ export async function GET() {
 
 export async function POST(req) {
   const auth = await requireApprovedWriter();
+
   if (!auth.ok) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: auth.error || "Forbidden",
-        next: auth.error === "Writer approval required" ? "/apply-writer" : undefined,
-      },
-      { status: auth.error === "Unauthorized" ? 401 : 403 }
-    );
+    if (auth.error === "Unauthorized") {
+      return NextResponse.json({ ok: false, code: "UNAUTHORIZED", error: "Please log in." }, { status: 401 });
+    }
+    const { code, status } = getWriterBlockReason(auth.user);
+    return NextResponse.json({ ok: false, code, error: auth.error }, { status });
   }
 
   if (!isDbEnabled()) {
@@ -127,14 +145,8 @@ export async function POST(req) {
   const parsed = WriterPostSchema.safeParse(body);
   if (!parsed.success) {
     const errors = parsed.error.flatten();
-    console.log("Validation errors:", errors);
     return NextResponse.json(
-      {
-        ok: false,
-        error: "Please fix the highlighted fields.",
-        fieldErrors: errors.fieldErrors,
-        formErrors: errors.formErrors,
-      },
+      { ok: false, error: "Please fix the highlighted fields.", fieldErrors: errors.fieldErrors, formErrors: errors.formErrors },
       { status: 400 }
     );
   }
@@ -149,24 +161,15 @@ export async function POST(req) {
   const exists = await Post.findOne({ slug }).lean();
   if (exists) {
     return NextResponse.json(
-      {
-        ok: false,
-        error: "A post with this slug already exists. Try a different title or set a custom slug.",
-        fieldErrors: { slug: ["This slug is already taken"] },
-      },
+      { ok: false, error: "A post with this slug already exists. Try a different title or set a custom slug.", fieldErrors: { slug: ["This slug is already taken"] } },
       { status: 409 }
     );
   }
 
-  // FIX: sanitize AFTER validation so we don't accidentally empty valid content
   const sanitizedHtml = cleanHtml(parsed.data.contentHtml);
   if (!sanitizedHtml || sanitizedHtml.trim().length < 10) {
     return NextResponse.json(
-      {
-        ok: false,
-        error: "Post content was stripped during sanitization. Please avoid unsupported HTML.",
-        fieldErrors: { contentHtml: ["Post content is invalid or too short after sanitization"] },
-      },
+      { ok: false, error: "Post content was stripped during sanitization. Please avoid unsupported HTML.", fieldErrors: { contentHtml: ["Post content is invalid or too short after sanitization"] } },
       { status: 400 }
     );
   }
@@ -224,27 +227,18 @@ export async function POST(req) {
   } catch (err) {
     console.error("Post.create error:", err);
 
-    // Mongoose validation error — map to fieldErrors
     if (err.name === "ValidationError") {
       const fieldErrors = {};
       for (const [key, val] of Object.entries(err.errors)) {
         fieldErrors[key] = [val.message];
       }
-      return NextResponse.json(
-        { ok: false, error: "Please fix the highlighted fields.", fieldErrors },
-        { status: 400 }
-      );
+      return NextResponse.json({ ok: false, error: "Please fix the highlighted fields.", fieldErrors }, { status: 400 });
     }
 
-    // Duplicate key (unique index) — e.g. slug
     if (err.code === 11000) {
       const field = Object.keys(err.keyValue || {})[0] || "slug";
       return NextResponse.json(
-        {
-          ok: false,
-          error: "A post with this slug already exists.",
-          fieldErrors: { [field]: [`This ${field} is already taken`] },
-        },
+        { ok: false, error: "A post with this slug already exists.", fieldErrors: { [field]: [`This ${field} is already taken`] } },
         { status: 409 }
       );
     }

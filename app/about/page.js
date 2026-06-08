@@ -71,30 +71,32 @@ function FeatureCard({ title, desc, icon, index }) {
 export default function AboutPage() {
   const audiences = [
     {
-      icon: "🎓",
-      title: "For Nursing Students",
-      desc: "Study-friendly notes, nursing concepts, exam guidance, and structured topics to help you build strong clinical understanding with confidence.",
+      icon: "📖",
+      title: "Nursing Students",
+      desc: "Find exam prep, study strategies, clinical posting experiences, and guidance from nurses who have already walked your path.",
       accent: "from-blue-500 to-blue-400",
     },
     {
       icon: "🩺",
-      title: "For Nurses & Professionals",
-      desc: "Improve patient safety and quality care through nursing protocols, documentation tips, monitoring guidance, and clinical best practices.",
+      title: "Registered Nurses",
+      desc: "Share your workplace realities, clinical experiences, and professional insights — publicly or anonymously, your choice.",
       accent: "from-red-500 to-red-400",
     },
     {
-      icon: "🏠",
-      title: "For Families & Caregivers",
-      desc: "Simple home-care knowledge for recovery support, hygiene care, nutrition awareness, medication routines, and recognizing warning signs early.",
+      icon: "✈️",
+      title: "Nurses Going Abroad",
+      desc: "Real pathway guides from nurses who have done it — NCLEX prep, UK/Australia routes, visa processes, and salary realities.",
       accent: "from-blue-500 to-red-400",
     },
   ];
 
   const features = [
-    { icon: "📄", title: "Nursing Articles & Notes",  desc: "Simple explanations, key points, and learning resources." },
-    { icon: "💊", title: "Patient Care Guidance",     desc: "Daily care tips, monitoring, hygiene, nutrition, and safety practices." },
-    { icon: "❓", title: "FAQs for Quick Answers",    desc: "Short, direct answers to common nursing and health questions." },
-    { icon: "📚", title: "Learning Support & Tools",  desc: "Study materials, reference points, and organized categories." },
+    { icon: "🎭", title: "Anonymous Publishing",      desc: "Verified users can publish without revealing identity — safe space for honest workplace stories." },
+    { icon: "🏥", title: "Hospital Diaries",          desc: "Real stories from clinical and hospital life — memorable moments, tough shifts, lessons learned." },
+    { icon: "🌏", title: "Abroad Pathway Guides",     desc: "Experience-based guides on working and studying nursing outside Nepal." },
+    { icon: "🎓", title: "Exam & Study Support",      desc: "Entrance exam tips, study techniques, and licensing exam guidance from those who passed." },
+    { icon: "🤝", title: "Mentor Connect",            desc: "Students can follow experienced nurses and ask career or study-related questions." },
+    { icon: "🔖", title: "Categories & Flairs",       desc: "Content tagged by role and topic — find exactly what's relevant to your journey." },
   ];
 
   return (
@@ -119,21 +121,22 @@ export default function AboutPage() {
         {/* Heading */}
         <FadeUp delay={0.08}>
           <h1 className="mt-4 text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-            Nursing Nepal —{" "}
-            <span className="text-blue-700">Care</span>,{" "}
-            <span className="text-red-600">Education</span> &amp; Guidance
+            A community built by{" "}
+            <span className="text-blue-700">nurses</span>,{" "}
+            for <span className="text-red-600">nurses</span>
           </h1>
         </FadeUp>
 
         {/* Intro */}
         <FadeUp delay={0.14}>
           <p className="mt-4 text-slate-600 leading-relaxed dark:text-blue-100/75">
-            Nursing Nepal is a digital platform built to support{" "}
+            Nursing Nepal is a{" "}
             <span className="font-semibold text-slate-900 dark:text-white">
-              nursing students, healthcare professionals, and families
+              community-driven knowledge-sharing platform
             </span>{" "}
-            by providing simplified nursing knowledge, practical patient-care guidance,
-            and health awareness resources in a clear and accessible way.
+            where nursing students and professionals share real experiences, clinical stories, exam journeys,
+            and career guidance. It is not a textbook site — it is a space for honest, practical, experience-based learning,
+            with verified contributors and privacy-controlled publishing.
           </p>
         </FadeUp>
 
@@ -148,12 +151,12 @@ export default function AboutPage() {
             {
               title: "Our Mission",
               icon: "🎯",
-              text: "To make nursing education and patient-care guidance more accessible, practical, and easy to understand for everyone in Nepal — from learners to working professionals and families.",
+              text: "To build a trusted space where Nepal's nursing community can share knowledge, support one another, and grow together — through both professional credibility and honest, privacy-controlled storytelling.",
             },
             {
               title: "Our Vision",
               icon: "🌏",
-              text: "To grow into Nepal's trusted nursing knowledge hub that encourages quality care, continuous learning, and a stronger healthcare community through digital support.",
+              text: "To become the go-to community platform for Nepali nursing students and professionals — where real experiences guide future nurses, and no one has to figure it out alone.",
             },
           ].map((item, i) => (
             <FadeUp key={i} delay={0.1 + i * 0.1}>
@@ -168,6 +171,52 @@ export default function AboutPage() {
             </FadeUp>
           ))}
         </div>
+
+        {/* How publishing works */}
+        <FadeUp delay={0.1} className="mt-6">
+          <div className="rounded-2xl border border-slate-200 bg-white/80 p-6
+            dark:border-blue-400/20 dark:bg-blue-950/30">
+            <h2 className="text-lg font-extrabold text-slate-900 dark:text-white mb-1">
+              Verified Identity. Your Choice of Voice.
+            </h2>
+            <p className="text-sm text-slate-500 dark:text-blue-100/60 mb-4">
+              All contributors are verified by our admin — but how you appear on each post is entirely up to you.
+            </p>
+            <div className="grid gap-3 md:grid-cols-2">
+              {[
+                {
+                  icon: "👤",
+                  title: "Public Publishing",
+                  desc: "Your name, photo, and role are shown. Posts appear on your profile. Great for mentoring, career guidance, and educational content.",
+                  color: "#1d4ed8",
+                },
+                {
+                  icon: "🎭",
+                  title: "Anonymous Publishing",
+                  desc: "Your identity stays hidden. Only your general role is shown (e.g., 'Registered Nurse'). No link to your profile. Safe for honest workplace stories.",
+                  color: "#dc2626",
+                },
+              ].map(({ icon, title, desc, color }, i) => (
+                <div
+                  key={i}
+                  className="rounded-xl border border-slate-200 bg-white p-4
+                    dark:border-blue-400/20 dark:bg-slate-950/40"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <div
+                      className="h-8 w-8 rounded-lg flex items-center justify-center text-sm"
+                      style={{ background: `${color}15`, border: `1.5px solid ${color}30` }}
+                    >
+                      {icon}
+                    </div>
+                    <div className="font-bold text-slate-900 dark:text-white text-sm">{title}</div>
+                  </div>
+                  <p className="text-sm text-slate-600 dark:text-blue-100/75">{desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </FadeUp>
 
         {/* What you will find */}
         <FadeUp delay={0.1} className="mt-6">
@@ -191,10 +240,9 @@ export default function AboutPage() {
               rounded-2xl border border-blue-400/20 bg-linear-to-r from-blue-600 to-red-500 p-6 text-white shadow-sm"
           >
             <div>
-              <div className="text-lg font-extrabold">Want to suggest a topic?</div>
+              <div className="text-lg font-extrabold">Want to share your story?</div>
               <div className="mt-1 text-sm text-white/90">
-                Tell us what nursing topics you want next — wound care, injection safety, first aid,
-                pediatric nursing, mental health, nutrition, and more.
+                Apply to become a verified contributor — publish publicly or anonymously, it is your call.
               </div>
             </div>
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }} className="shrink-0">
@@ -203,7 +251,7 @@ export default function AboutPage() {
                 className="inline-block rounded-xl bg-white/20 border border-white/30 px-5 py-2.5 text-sm font-extrabold text-white
                   hover:bg-white/30 transition backdrop-blur-sm"
               >
-                Contact Us →
+                Get in Touch →
               </Link>
             </motion.div>
           </motion.div>
@@ -215,8 +263,8 @@ export default function AboutPage() {
             dark:border-blue-400/10 dark:bg-blue-950/20">
             <span className="text-sm">⚠️</span>
             <p className="text-xs text-slate-500 dark:text-blue-100/60">
-              <span className="font-semibold">Disclaimer:</span> Nursing Nepal provides educational and informational content only.
-              It is not a substitute for professional medical diagnosis or treatment.
+              <span className="font-semibold">Disclaimer:</span> Content on Nursing Nepal is shared by community members for educational and informational purposes.
+              It is not a substitute for professional medical advice or clinical judgment.
             </p>
           </div>
         </FadeUp>
