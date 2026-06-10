@@ -22,6 +22,7 @@ function serializePost(post) {
     views:       post.views       || 0,
     likesCount:  post.likesCount  || 0,
     isAnonymous: post.isAnonymous || false,
+    isOfficialPost: post.isOfficialPost || false,
     publishedAt: post.publishedAt instanceof Date ? post.publishedAt.toISOString() : post.publishedAt,
     createdAt:   post.createdAt   instanceof Date ? post.createdAt.toISOString()   : post.createdAt,
     // author info — safe for anonymous
@@ -43,7 +44,7 @@ async function getPosts() {
       {
         title: 1, slug: 1, excerpt: 1, coverImage: 1,
         category: 1, postType: 1, tags: 1, readTime: 1,
-        views: 1, likesCount: 1, isAnonymous: 1,
+        views: 1, likesCount: 1, isAnonymous: 1,isOfficialPost: 1,
         authorId: 1, publishedAt: 1, createdAt: 1,
       }
     )

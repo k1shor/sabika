@@ -1,26 +1,23 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
+// import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { dbConnect } from "@/lib/db";
 import { User } from "@/models/User";
 import { Post } from "@/models/Post";
-import AdminPostsPanel from "@/app/admin/posts/AdminPostsPanel";
-import AdminUsersPanel from "@/app/admin/users/AdminUsersPanel";
-import WriterRequestsTable from "./WriterRequestsTable";
 import AdminDashboardTabs from "./AdminDashboardTabs";
 
 export const dynamic = "force-dynamic";
 
-function timeAgo(date) {
-  if (!date) return "";
-  const diff  = Date.now() - new Date(date).getTime();
-  const mins  = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days  = Math.floor(diff / 86400000);
-  if (mins  < 60) return `${mins}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  return `${days}d ago`;
-}
+// function timeAgo(date) {
+//   if (!date) return "";
+//   const diff  = Date.now() - new Date(date).getTime();
+//   const mins  = Math.floor(diff / 60000);
+//   const hours = Math.floor(diff / 3600000);
+//   const days  = Math.floor(diff / 86400000);
+//   if (mins  < 60) return `${mins}m ago`;
+//   if (hours < 24) return `${hours}h ago`;
+//   return `${days}d ago`;
+// }
 
 export default async function AdminDashboardPage() {
   const auth = await requireAdmin();

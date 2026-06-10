@@ -49,13 +49,13 @@ const GridIcon = () => (
 
 function StatCard({ icon, label, value, color }) {
   return (
-    <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25">
-      <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${color}`}>
+    <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25">
+      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${color}`}>
         {icon}
       </div>
-      <div>
-        <p className="text-xs font-semibold text-slate-500 dark:text-blue-100/60">{label}</p>
-        <p className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">{value ?? "—"}</p>
+      <div className="min-w-0">
+        <p className="text-xs font-semibold text-slate-500 dark:text-blue-100/60 truncate">{label}</p>
+        <p className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">{value ?? "—"}</p>
       </div>
     </div>
   );
@@ -147,10 +147,10 @@ function ActivityFeed({ items }) {
 // ─── Tab definitions ──────────────────────────────────────────────────────────
 
 const TABS = [
-  { id: "overview",  label: "Overview",        icon: <GridIcon /> },
-  { id: "posts",     label: "Manage Posts",    icon: <FileIcon /> },
-  { id: "users",     label: "Manage Users",    icon: <UsersIcon /> },
-  { id: "writers",   label: "Writer Requests", icon: <EditIcon /> },
+  { id: "overview",  label: "Overview",     icon: <GridIcon /> },
+  { id: "posts",     label: "Posts",        icon: <FileIcon /> },
+  { id: "users",     label: "Users",        icon: <UsersIcon /> },
+  { id: "writers",   label: "Requests",     icon: <EditIcon /> },
 ];
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -172,30 +172,30 @@ export default function AdminDashboardTabs({
 
       {/* Top bar */}
       <div className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur dark:border-blue-400/20 dark:bg-slate-950/90">
-        <div className="mx-auto max-w-7xl px-6">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="flex items-center justify-between py-3">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
                 {user?.name?.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase() || "A"}
               </div>
-              <div>
-                <p className="text-sm font-bold text-slate-800 dark:text-white leading-none">{user?.name || "Admin"}</p>
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-slate-800 dark:text-white leading-none truncate">{user?.name || "Admin"}</p>
                 <p className="text-[10px] text-slate-400">Administrator</p>
               </div>
             </div>
             <Link href="/"
-              className="rounded-xl border border-slate-200 px-4 py-1.5 text-sm font-bold text-slate-700 hover:bg-slate-50 transition dark:border-blue-400/20 dark:text-blue-100 dark:hover:bg-blue-950/40">
-              ← Back to Site
+              className="shrink-0 rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition dark:border-blue-400/20 dark:text-blue-100 dark:hover:bg-blue-950/40">
+              ← Site
             </Link>
           </div>
 
-          {/* Tabs */}
-          <div className="flex gap-1 -mb-px">
+          {/* Tabs — scrollable on mobile */}
+          <div className="flex gap-0 -mb-px overflow-x-auto scrollbar-none">
             {TABS.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors
+                className={`flex shrink-0 items-center gap-1.5 px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-colors whitespace-nowrap
                   ${activeTab === tab.id
                     ? "border-blue-600 text-blue-700 dark:border-blue-400 dark:text-blue-300"
                     : "border-transparent text-slate-500 hover:text-slate-700 dark:text-blue-100/50 dark:hover:text-blue-100/80"
@@ -204,7 +204,7 @@ export default function AdminDashboardTabs({
                 {tab.icon}
                 {tab.label}
                 {tab.id === "writers" && pendingWriters > 0 && (
-                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
+                  <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
                     {pendingWriters}
                   </span>
                 )}
@@ -215,17 +215,17 @@ export default function AdminDashboardTabs({
       </div>
 
       {/* Tab content */}
-      <div className="mx-auto max-w-7xl px-6 py-6">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6">
 
         {/* ── Overview ── */}
         {activeTab === "overview" && (
           <div className="flex flex-col gap-6">
-            <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
               Admin Dashboard
             </h1>
 
-            {/* Stat cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+            {/* Stat cards — 2 cols on mobile, 5 on large */}
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
               <StatCard label="Total Users"     value={stats.totalUsers}     color="bg-blue-50 text-blue-600 dark:bg-blue-950/40"       icon={<UsersIcon />} />
               <StatCard label="Total Blogs"     value={stats.totalPosts}     color="bg-green-50 text-green-600 dark:bg-green-950/40"    icon={<FileIcon />} />
               <StatCard label="Pending Writers" value={stats.pendingWriters} color="bg-yellow-50 text-yellow-600 dark:bg-yellow-950/40" icon={<EditIcon />} />
@@ -233,38 +233,38 @@ export default function AdminDashboardTabs({
               <StatCard label="Banned Users"    value={stats.bannedUsers}    color="bg-red-50 text-red-600 dark:bg-red-950/40"          icon={<BanIcon />} />
             </div>
 
-            {/* Charts + Activity */}
+            {/* Charts + Activity — stack on mobile */}
             <div className="grid gap-4 lg:grid-cols-3">
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25">
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25">
                 <p className="text-sm font-extrabold text-slate-800 dark:text-white mb-4">Posts Per Day</p>
                 <LineChart data={postsPerDay} />
               </div>
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25">
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25">
                 <p className="text-sm font-extrabold text-slate-800 dark:text-white mb-4">New Users Per Week</p>
                 <BarChart data={usersPerWeek} />
               </div>
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25">
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25">
                 <p className="text-sm font-extrabold text-slate-800 dark:text-white mb-4">Recent Activity</p>
                 <ActivityFeed items={activity} />
               </div>
             </div>
 
-            {/* Quick actions */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {/* Quick actions — 2 cols on mobile */}
+            <div className="grid grid-cols-2 gap-3">
               {[
-                { label: "Manage Posts",    tab: "posts",   color: "bg-blue-600 hover:bg-blue-700"   },
-                { label: "Manage Users",    tab: "users",   color: "bg-slate-700 hover:bg-slate-800" },
-                { label: "Writer Requests", tab: "writers", color: "bg-yellow-500 hover:bg-yellow-600" },
+                { label: "Manage Posts",     tab: "posts",   color: "bg-blue-600 hover:bg-blue-700"     },
+                { label: "Manage Users",     tab: "users",   color: "bg-slate-700 hover:bg-slate-800"   },
+                { label: "Writer Requests",  tab: "writers", color: "bg-yellow-500 hover:bg-yellow-600" },
                 { label: "Contact Messages", href: "/admin/contact-messages", color: "bg-green-600 hover:bg-green-700" },
               ].map((action) => (
                 action.href ? (
                   <Link key={action.label} href={action.href}
-                    className={`flex items-center justify-center rounded-xl px-4 py-3 text-sm font-bold text-white transition ${action.color}`}>
+                    className={`flex items-center justify-center rounded-xl px-3 py-3 text-xs sm:text-sm font-bold text-white transition text-center ${action.color}`}>
                     {action.label}
                   </Link>
                 ) : (
                   <button key={action.label} onClick={() => setActiveTab(action.tab)}
-                    className={`flex items-center justify-center rounded-xl px-4 py-3 text-sm font-bold text-white transition ${action.color}`}>
+                    className={`flex items-center justify-center rounded-xl px-3 py-3 text-xs sm:text-sm font-bold text-white transition ${action.color}`}>
                     {action.label}
                   </button>
                 )
@@ -276,7 +276,7 @@ export default function AdminDashboardTabs({
         {/* ── Manage Posts ── */}
         {activeTab === "posts" && (
           <div className="flex flex-col gap-4">
-            <h2 className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">Manage Posts</h2>
+            <h2 className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">Manage Posts</h2>
             <AdminPostsPanel />
           </div>
         )}
@@ -284,7 +284,7 @@ export default function AdminDashboardTabs({
         {/* ── Manage Users ── */}
         {activeTab === "users" && (
           <div className="flex flex-col gap-4">
-            <h2 className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">Manage Users</h2>
+            <h2 className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">Manage Users</h2>
             <AdminUsersPanel currentUserId={currentUserId} />
           </div>
         )}
@@ -292,7 +292,7 @@ export default function AdminDashboardTabs({
         {/* ── Writer Requests ── */}
         {activeTab === "writers" && (
           <div className="flex flex-col gap-4">
-            <h2 className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">Writer Requests</h2>
+            <h2 className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">Writer Requests</h2>
             <WriterRequestsTable initialWriters={writerRequests} />
           </div>
         )}

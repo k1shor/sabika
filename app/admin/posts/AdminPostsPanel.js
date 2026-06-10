@@ -1,32 +1,23 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element */
 import { useEffect, useRef, useState } from "react";
-import Button from "@/components/Button";
-import Input from "@/components/Input";
-import TextArea from "@/components/TextArea";
+import Button    from "@/components/Button";
+import Input     from "@/components/Input";
+import TextArea  from "@/components/TextArea";
+import RichTextEditor from "@/components/RichTextEditor";
+import {
+  CATEGORY_OPTIONS,
+  POST_TYPE_OPTIONS,
+  uploadFile,
+  selectClass,
+} from "@/components/posts/postFormUtils";
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const STATUS_FILTERS = ["all", "approved", "pending", "rejected"];
 
-const CATEGORY_LABELS = {
-  entrance_pass:   "Entrance Pass",
-  nursing_student: "Nursing Student",
-  working_nurse:   "Working Nurse",
-  abroad_study:    "Abroad Study",
-  abroad_work:     "Abroad Work",
-};
-
-const CATEGORY_OPTIONS = Object.entries(CATEGORY_LABELS);
-
-const POST_TYPE_OPTIONS = [
-  { value: "normal",          label: "Normal" },
-  { value: "reality_check",   label: "Reality Check 🔥" },
-  { value: "hospital_diary",  label: "Hospital Diary 🏥" },
-  { value: "country_pathway", label: "Country Pathway 🌍" },
-];
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+const CATEGORY_LABELS = Object.fromEntries(CATEGORY_OPTIONS.map((o) => [o.value, o.label]));
 
 function formatDate(value) {
   const date = new Date(value || 0);
@@ -41,41 +32,26 @@ function statusStyle(status) {
   return "bg-slate-100 text-slate-600";
 }
 
-function selectClass(hasError = false) {
-  return `w-full rounded-2xl border px-4 py-2.5 text-sm font-semibold outline-none focus:ring-4 transition ${
-    hasError
-      ? "border-red-400 bg-red-50 text-red-700 focus:border-red-400 focus:ring-red-500/15"
-      : "border-slate-200 bg-white/80 text-slate-700 focus:border-blue-400 focus:ring-blue-500/15 dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-blue-100"
-  }`;
-}
-
-async function uploadFile(file) {
-  const form = new FormData();
-  form.append("file", file);
-  const res  = await fetch("/api/upload", { method: "POST", body: form });
-  const data = await res.json().catch(() => null);
-  if (!data?.ok) throw new Error(data?.error || "Upload failed");
-  return data.url;
-}
-
 // ─── Official Post Form ───────────────────────────────────────────────────────
 
 function OfficialPostForm({ onCreated }) {
-  const [busy,         setBusy]         = useState(false);
-  const [coverImage,   setCoverImage]   = useState("");
-  const [contentHtml,  setContentHtml]  = useState("");
-  const [msg,          setMsg]          = useState(null);
-  const [fieldErrors,  setFieldErrors]  = useState({});
-  const coverRef = useRef(null);
+  const [busy,        setBusy]        = useState(false);
+  const [coverImage,  setCoverImage]  = useState("");
+  const [contentHtml, setContentHtml] = useState("");
+  const [msg,         setMsg]         = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
 
+  const coverRef  = useRef(null);
+  const inlineRef = useRef(null);
+
+  // ── upload helpers ───────────────────────────────────
   const uploadCover = async (e) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
     setBusy(true);
     try {
-      const url = await uploadFile(file);
-      setCoverImage(url);
+      setCoverImage(await uploadFile(file));
     } catch (err) {
       setMsg({ text: err.message, ok: false });
     } finally {
@@ -83,6 +59,25 @@ function OfficialPostForm({ onCreated }) {
     }
   };
 
+  const uploadInlineImage = () =>
+    new Promise((resolve) => {
+      const input = inlineRef.current;
+      if (!input) return resolve(null);
+      const handler = async () => {
+        const file = input.files?.[0];
+        input.value = "";
+        input.removeEventListener("change", handler);
+        if (!file) return resolve(null);
+        setBusy(true);
+        try   { resolve(await uploadFile(file)); }
+        catch (err) { setMsg({ text: err.message, ok: false }); resolve(null); }
+        finally { setBusy(false); }
+      };
+      input.addEventListener("change", handler);
+      input.click();
+    });
+
+  // ── submit ───────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMsg(null);
@@ -95,20 +90,14 @@ function OfficialPostForm({ onCreated }) {
     const postType = String(form.get("postType") || "normal");
     const readTime = String(form.get("readTime") || "5 min read").trim();
 
-    // simple content from textarea if no rich editor
-    const rawContent = String(form.get("content") || "").trim();
-    const content    = contentHtml || (rawContent ? `<p>${rawContent.replace(/\n/g, "</p><p>")}</p>` : "");
-
     const errors = {};
     if (!title)    errors.title    = "Title is required";
     if (!excerpt)  errors.excerpt  = "Excerpt is required";
     if (!category) errors.category = "Category is required";
-    if (!content)  errors.content  = "Content is required";
+    if (!contentHtml || contentHtml.trim() === "" || contentHtml === "<p></p>")
+                   errors.content  = "Content is required";
 
-    if (Object.keys(errors).length > 0) {
-      setFieldErrors(errors);
-      return;
-    }
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
 
     setBusy(true);
     try {
@@ -116,14 +105,9 @@ function OfficialPostForm({ onCreated }) {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({
-          title,
-          excerpt,
-          category,
-          postType,
-          readTime,
+          title, excerpt, category, postType, readTime,
           coverImage,
-          contentHtml: content,
-          // no tags, no flair, no anonymous — official post
+          contentHtml,
         }),
       });
       const data = await res.json().catch(() => null);
@@ -134,7 +118,6 @@ function OfficialPostForm({ onCreated }) {
         return;
       }
 
-      // reset form
       e.target.reset();
       setCoverImage("");
       setContentHtml("");
@@ -147,9 +130,12 @@ function OfficialPostForm({ onCreated }) {
     }
   };
 
+  // ── render ───────────────────────────────────────────
   return (
     <div className="rounded-3xl border border-blue-200 bg-blue-50/40 p-6 dark:border-blue-400/20 dark:bg-blue-950/20">
-      <div className="flex items-center gap-3 mb-5">
+
+      {/* heading */}
+      <div className="mb-5 flex items-center gap-3">
         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-sm font-extrabold text-white">
           N
         </div>
@@ -163,7 +149,9 @@ function OfficialPostForm({ onCreated }) {
         </div>
       </div>
 
-      <input ref={coverRef} type="file" accept="image/*" className="hidden" onChange={uploadCover} />
+      {/* hidden file inputs */}
+      <input ref={coverRef}  type="file" accept="image/*" className="hidden" onChange={uploadCover} />
+      <input ref={inlineRef} type="file" accept="image/*" className="hidden" />
 
       <form onSubmit={handleSubmit} className="grid gap-4">
 
@@ -173,11 +161,7 @@ function OfficialPostForm({ onCreated }) {
             Title <span className="text-red-500">*</span>
           </label>
           <div className="mt-1.5">
-            <Input
-              name="title"
-              placeholder="Post title"
-              hasError={!!fieldErrors.title}
-            />
+            <Input name="title" placeholder="Post title" hasError={!!fieldErrors.title} />
             {fieldErrors.title && <p className="mt-1 text-xs text-red-600">{fieldErrors.title}</p>}
           </div>
         </div>
@@ -188,11 +172,7 @@ function OfficialPostForm({ onCreated }) {
             Excerpt <span className="text-red-500">*</span>
           </label>
           <div className="mt-1.5">
-            <TextArea
-              name="excerpt"
-              placeholder="Short description shown in blog cards"
-              hasError={!!fieldErrors.excerpt}
-            />
+            <TextArea name="excerpt" placeholder="Short description shown in blog cards" hasError={!!fieldErrors.excerpt} />
             {fieldErrors.excerpt && <p className="mt-1 text-xs text-red-600">{fieldErrors.excerpt}</p>}
           </div>
         </div>
@@ -206,17 +186,15 @@ function OfficialPostForm({ onCreated }) {
             <div className="mt-1.5">
               <select name="category" className={selectClass(!!fieldErrors.category)}>
                 <option value="">Select category</option>
-                {CATEGORY_OPTIONS.map(([val, label]) => (
-                  <option key={val} value={val}>{label}</option>
+                {CATEGORY_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
               </select>
               {fieldErrors.category && <p className="mt-1 text-xs text-red-600">{fieldErrors.category}</p>}
             </div>
           </div>
           <div>
-            <label className="text-sm font-semibold text-slate-700 dark:text-blue-100/80">
-              Post Type
-            </label>
+            <label className="text-sm font-semibold text-slate-700 dark:text-blue-100/80">Post Type</label>
             <div className="mt-1.5">
               <select name="postType" className={selectClass()}>
                 {POST_TYPE_OPTIONS.map((o) => (
@@ -236,42 +214,42 @@ function OfficialPostForm({ onCreated }) {
         </div>
 
         {/* Cover Image */}
-        <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white/60 p-4 dark:border-blue-400/20">
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-slate-700 dark:text-blue-100/80">Cover Image</p>
-            <p className="text-xs text-slate-400">Optional but recommended</p>
+        <div className="rounded-2xl border border-slate-200 bg-white/60 p-4 dark:border-blue-400/20">
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-slate-700 dark:text-blue-100/80">Cover Image</p>
+              <p className="text-xs text-slate-400">Optional but recommended</p>
+            </div>
+            <div className="flex gap-2">
+              <Button type="button" disabled={busy} onClick={() => coverRef.current?.click()}>
+                {coverImage ? "Change" : "Upload"}
+              </Button>
+              {coverImage && (
+                <button
+                  type="button"
+                  onClick={() => setCoverImage("")}
+                  className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-100"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
           </div>
-          <div className="flex gap-2">
-            <Button type="button" disabled={busy} onClick={() => coverRef.current?.click()}>
-              {coverImage ? "Change" : "Upload"}
-            </Button>
-            {coverImage && (
-              <button
-                type="button"
-                onClick={() => setCoverImage("")}
-                className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-100"
-              >
-                Remove
-              </button>
-            )}
-          </div>
+          {coverImage && (
+            <img src={coverImage} alt="Cover" className="mt-4 h-36 w-full rounded-2xl object-cover" />
+          )}
         </div>
-        {coverImage && (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img src={coverImage} alt="Cover" className="h-36 w-full rounded-2xl object-cover" />
-        )}
 
-        {/* Content */}
-        <div>
+        {/* Rich Text Content */}
+        <div className="min-w-0">
           <label className="text-sm font-semibold text-slate-700 dark:text-blue-100/80">
             Content <span className="text-red-500">*</span>
           </label>
-          <div className="mt-1.5">
-            <textarea
-              name="content"
-              rows={8}
-              placeholder="Write the post content here..."
-              className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-white dark:placeholder:text-blue-100/30"
+          <div className="mt-1.5 min-w-0 overflow-hidden">
+            <RichTextEditor
+              value={contentHtml}
+              onChange={setContentHtml}
+              onUploadImage={uploadInlineImage}
             />
             {fieldErrors.content && <p className="mt-1 text-xs text-red-600">{fieldErrors.content}</p>}
           </div>
@@ -291,6 +269,7 @@ function OfficialPostForm({ onCreated }) {
         <Button type="submit" disabled={busy} className="w-full">
           {busy ? "Publishing..." : "Publish as Nursing Nepal"}
         </Button>
+
       </form>
     </div>
   );
@@ -299,15 +278,15 @@ function OfficialPostForm({ onCreated }) {
 // ─── Community Posts (moderation) ────────────────────────────────────────────
 
 function CommunityPosts() {
-  const [posts,        setPosts]        = useState([]);
-  const [loading,      setLoading]      = useState(true);
-  const [busyId,       setBusyId]       = useState(null);
-  const [msg,          setMsg]          = useState(null);
-  const [query,        setQuery]        = useState("");
-  const [statusFilter, setStatus]       = useState("all");
-  const [flaggedOnly,  setFlagged]      = useState(false);
-  const [page,         setPage]         = useState(1);
-  const [totalPages,   setTotalPages]   = useState(1);
+  const [posts,        setPosts]      = useState([]);
+  const [loading,      setLoading]    = useState(true);
+  const [busyId,       setBusyId]     = useState(null);
+  const [msg,          setMsg]        = useState(null);
+  const [query,        setQuery]      = useState("");
+  const [statusFilter, setStatus]     = useState("all");
+  const [flaggedOnly,  setFlagged]    = useState(false);
+  const [page,         setPage]       = useState(1);
+  const [totalPages,   setTotalPages] = useState(1);
 
   const load = async (search = query, s = statusFilter, f = flaggedOnly, p = page) => {
     setLoading(true);
@@ -377,6 +356,7 @@ function CommunityPosts() {
 
   return (
     <div className="rounded-3xl border border-slate-200 bg-white/70 p-6 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25">
+
       {/* Header */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
@@ -401,11 +381,11 @@ function CommunityPosts() {
             key={f}
             type="button"
             onClick={() => { setStatus(f); setPage(1); load(query, f, flaggedOnly, 1); }}
-            className={`rounded-full px-3 py-1.5 text-xs font-semibold border transition
-              ${statusFilter === f
+            className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+              statusFilter === f
                 ? "bg-blue-600 text-white border-blue-600"
                 : "border-slate-200 text-slate-600 dark:border-blue-400/20 dark:text-blue-100/70"
-              }`}
+            }`}
           >
             {f.charAt(0).toUpperCase() + f.slice(1)}
           </button>
@@ -413,8 +393,11 @@ function CommunityPosts() {
         <button
           type="button"
           onClick={() => { setFlagged(!flaggedOnly); setPage(1); load(query, statusFilter, !flaggedOnly, 1); }}
-          className={`rounded-full px-3 py-1.5 text-xs font-semibold border transition
-            ${flaggedOnly ? "bg-red-600 text-white border-red-600" : "border-slate-200 text-slate-600 dark:border-blue-400/20 dark:text-blue-100/70"}`}
+          className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+            flaggedOnly
+              ? "bg-red-600 text-white border-red-600"
+              : "border-slate-200 text-slate-600 dark:border-blue-400/20 dark:text-blue-100/70"
+          }`}
         >
           🚩 Flagged only
         </button>
@@ -427,7 +410,7 @@ function CommunityPosts() {
         </div>
       )}
 
-      {/* Posts */}
+      {/* Posts list */}
       {loading ? (
         <div className="mt-5 flex flex-col gap-3">
           {[...Array(3)].map((_, i) => (
@@ -444,10 +427,10 @@ function CommunityPosts() {
             {posts.map((post) => {
               const isBusy = busyId === post._id;
               return (
-                <div key={post._id} className="py-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                <div key={post._id} className="flex flex-col gap-3 py-4 md:flex-row md:items-start md:justify-between">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm font-extrabold text-slate-900 dark:text-white truncate">
+                      <p className="truncate text-sm font-extrabold text-slate-900 dark:text-white">
                         {post.title}
                       </p>
                       <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${statusStyle(post.status)}`}>
@@ -482,7 +465,7 @@ function CommunityPosts() {
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap gap-2 shrink-0">
+                  <div className="flex shrink-0 flex-wrap gap-2">
                     {post.status !== "approved" && (
                       <button type="button" disabled={isBusy}
                         onClick={() => updatePost(post._id, { status: "approved" })}
@@ -499,11 +482,11 @@ function CommunityPosts() {
                     )}
                     <button type="button" disabled={isBusy}
                       onClick={() => updatePost(post._id, { isFlagged: !post.isFlagged })}
-                      className={`rounded-xl border px-3 py-1.5 text-xs font-bold disabled:opacity-60 transition
-                        ${post.isFlagged
+                      className={`rounded-xl border px-3 py-1.5 text-xs font-bold transition disabled:opacity-60 ${
+                        post.isFlagged
                           ? "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-blue-400/20 dark:bg-blue-950/30"
                           : "border-red-200 bg-red-50 text-red-700 hover:bg-red-100 dark:border-red-400/30 dark:bg-red-500/15 dark:text-red-200"
-                        }`}>
+                      }`}>
                       {post.isFlagged ? "Unflag" : "Flag"}
                     </button>
                     <button type="button" disabled={isBusy}
@@ -543,43 +526,33 @@ function CommunityPosts() {
 // ─── Main Panel ───────────────────────────────────────────────────────────────
 
 export default function AdminPostsPanel() {
-  const [activeTab, setActiveTab] = useState("official");
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [activeTab,   setActiveTab]   = useState("official");
+  const [refreshKey,  setRefreshKey]  = useState(0);
 
   return (
     <div className="grid gap-6">
-      {/* Tab switcher */}
-      <div className="flex gap-2 rounded-2xl border border-slate-200 bg-white/70 p-1.5 w-fit shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25">
-        <button
-          type="button"
-          onClick={() => setActiveTab("official")}
-          className={`rounded-xl px-5 py-2 text-sm font-bold transition ${
-            activeTab === "official"
-              ? "bg-blue-600 text-white shadow-sm"
-              : "text-slate-600 hover:bg-slate-100 dark:text-blue-100/70 dark:hover:bg-blue-950/40"
-          }`}
-        >
-          ✦ Official Posts
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("community")}
-          className={`rounded-xl px-5 py-2 text-sm font-bold transition ${
-            activeTab === "community"
-              ? "bg-blue-600 text-white shadow-sm"
-              : "text-slate-600 hover:bg-slate-100 dark:text-blue-100/70 dark:hover:bg-blue-950/40"
-          }`}
-        >
-          👥 Community Posts
-        </button>
+      <div className="flex w-fit gap-2 rounded-2xl border border-slate-200 bg-white/70 p-1.5 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25">
+        {[
+          { id: "official",  label: "✦ Official Posts"   },
+          { id: "community", label: "👥 Community Posts"  },
+        ].map(({ id, label }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setActiveTab(id)}
+            className={`rounded-xl px-5 py-2 text-sm font-bold transition ${
+              activeTab === id
+                ? "bg-blue-600 text-white shadow-sm"
+                : "text-slate-600 hover:bg-slate-100 dark:text-blue-100/70 dark:hover:bg-blue-950/40"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
-      {activeTab === "official" && (
-        <OfficialPostForm onCreated={() => setRefreshKey((k) => k + 1)} />
-      )}
-      {activeTab === "community" && (
-        <CommunityPosts key={refreshKey} />
-      )}
+      {activeTab === "official"  && <OfficialPostForm onCreated={() => setRefreshKey((k) => k + 1)} />}
+      {activeTab === "community" && <CommunityPosts key={refreshKey} />}
     </div>
   );
 }
