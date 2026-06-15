@@ -2,7 +2,7 @@ import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Analytics from "@/components/Analytics";
-
+import LayoutContent from "@/components/LayoutContent";
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 const gscToken = process.env.NEXT_PUBLIC_GSC_TOKEN || "";
 
@@ -104,9 +104,9 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className="min-h-screen flex flex-col">
         <Analytics />
-        <Header />
+        <LayoutContent>
         <main className="flex-1">{children}</main>
-        <Footer />
+        </LayoutContent>
       </body>
     </html>
   );

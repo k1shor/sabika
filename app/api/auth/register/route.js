@@ -141,6 +141,12 @@ export async function POST(req) {
   const existingUser = await User.findOne({ email: normalizedEmail });
 
   if (existingUser) {
+    if (existingUser.isBanned) {
+      return NextResponse.json(
+        { ok: false, error: "This account has been suspended." },
+        { status: 403 }
+      );
+    }
     // Google OAuth — user already exists, return their account
     if (isOAuth) {
       return NextResponse.json({
@@ -184,8 +190,8 @@ export async function POST(req) {
       email:normalizedEmail,
       passwordHash,
       role,
-      provider: "credentials",
-      isVerified: false,
+      provider: isOAuth ? "google" : "credentials",
+      isVerified: isOAuth ? true : false,
       writerVerification: { status: "none" },
     });
   } catch (err) {
@@ -223,7 +229,7 @@ export async function POST(req) {
       ok:        true,
       highlight: "Account created successfully!",
       message:   isOAuth
-        ? "Signed in with Google. Welcome to Nursing Nepal!"
+        ? "Signed up with Google. Welcome to Nursing Nepal!"
         : "Account created. Please check your email to verify your account before logging in.",
     },
     { status: 201 }

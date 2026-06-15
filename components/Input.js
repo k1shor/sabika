@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-export default function Input({ className = "", ...props }) {
+export default function Input({ className = "", hasError = false,...props }) {
   return (
     <input
       {...props}

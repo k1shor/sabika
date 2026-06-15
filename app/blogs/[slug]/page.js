@@ -4,7 +4,8 @@ import Link from "next/link";
 import { DUMMY_POSTS } from "@/lib/dummy";
 import { isDbEnabled } from "@/lib/db";
 import Button from "@/components/Button";
-
+import BlogHistoryTracker from "@/components/BlogHistoryTracker";
+import SavePostButton from "@/components/SavePostButton";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -57,15 +58,25 @@ async function findDbPost(slug) {
   const { dbConnect } = await import("@/lib/db");
   const { Post } = await import("@/models/Post");
   await dbConnect();
-  const post = await Post.findOne({ slug: s }).lean();
+  const post = await Post.findOne({ slug: s, status: "approved" })
+  .populate("authorId", "name avatarUrl badge username")
+  .lean();
   if (!post) return null;
   return {
     ...post,
-    _id: post._id ? String(post._id) : undefined,
-    createdAt: post.createdAt instanceof Date ? post.createdAt.toISOString() : post.createdAt,
-    updatedAt: post.updatedAt instanceof Date ? post.updatedAt.toISOString() : post.updatedAt,
+    _id:       post._id ? String(post._id) : undefined,
     publishedAt: post.publishedAt instanceof Date ? post.publishedAt.toISOString() : post.publishedAt,
-  };
+    createdAt:   post.createdAt instanceof Date ? post.createdAt.toISOString() : post.createdAt,
+    updatedAt:   post.updatedAt instanceof Date ? post.updatedAt.toISOString() : post.updatedAt,
+    // ✅ serialize authorId properly
+    authorId: post.authorId ? {
+      _id:      String(post.authorId._id),
+      name:     post.authorId.name || "",
+      avatarUrl: post.authorId.avatarUrl || "",
+      badge:    post.authorId.badge || "",
+      username: post.authorId.username || null,
+    } : null,
+  }
 }
 
 async function getPost(slug) {
@@ -84,7 +95,9 @@ export default async function BlogDetailsPage(props) {
 
   if (!post) {
     return (
+
       <Container>
+        <BlogHistoryTracker post={post} />
         <div className="rounded-3xl border border-slate-200 bg-white/70 p-8 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25">
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
             Article not found
@@ -107,16 +120,20 @@ export default async function BlogDetailsPage(props) {
   const updated = post.updatedAt && post.updatedAt !== post.createdAt ? post.updatedAt : null;
 
   // anonymous post: author field is empty or explicitly "anonymous"
-  const isAnonymous =
-    !post.author || post.author.trim().toLowerCase() === "anonymous";
-
+  const isAnonymous = post.isAnonymous;
+  const authorName  = post.authorId?.name || "Unknown";
+  const authorAvatar = post.authorId?.avatarUrl || "";
   return (
     <Container>
       <div className="rounded-3xl border border-slate-200 bg-white/70 p-7 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25">
+        <BlogHistoryTracker post={post} />
 
-        <Link href="/blogs">
-          <Button>Back to Articles</Button>
-        </Link>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Link href="/blogs">
+            <Button>Back to Articles</Button>
+          </Link>
+          <SavePostButton postId={post._id} slug={post.slug} />
+        </div>
 
         {post.coverImage && (
           <div className="mt-6 overflow-hidden rounded-3xl border border-slate-200 dark:border-blue-400/20">
@@ -185,6 +202,14 @@ export default async function BlogDetailsPage(props) {
                   <span className="text-sm font-semibold text-slate-700 dark:text-blue-100/80">
                     {post.author}
                   </span>
+                  {post.authorId ? (
+                    <Link
+                    href={`/writers/${post.authorId?._id || post.authorId}`}
+                      className="text-xs font-bold text-blue-700 hover:underline dark:text-blue-300"
+                    >
+                      View writer profile
+                    </Link>
+                  ) : null}
                   {post.authorRole && (
                     <span className="text-xs text-slate-500 dark:text-blue-100/50">
                       {post.authorRole}
@@ -232,11 +257,11 @@ export default async function BlogDetailsPage(props) {
         <div className="mt-7 border-t border-slate-200 pt-6 dark:border-blue-400/20">
           {post.contentHtml ? (
             <article
-              className="prose prose-slate max-w-none dark:prose-invert"
+              className="blog-rich-content max-w-none"
               dangerouslySetInnerHTML={{ __html: post.contentHtml }}
             />
           ) : (
-            <article className="prose prose-slate max-w-none dark:prose-invert">
+            <article className="blog-rich-content max-w-none">
               {post.content || ""}
             </article>
           )}

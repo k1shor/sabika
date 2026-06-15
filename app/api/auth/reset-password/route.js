@@ -10,9 +10,23 @@ export const dynamic = "force-dynamic";
 
 const ResetPasswordSchema = z.object({
   token: z.string().length(64).regex(/^[a-f0-9]+$/i),
-  password: z.string().min(8).max(200),
+  password: z
+    .string()
+    .min(8)
+    .max(200)
+    .refine((val) => /[A-Z]/.test(val), {
+      message: "Password must include at least one uppercase letter.",
+    })
+    .refine((val) => /[a-z]/.test(val), {
+      message: "Password must include at least one lowercase letter.",
+    })
+    .refine((val) => /[0-9]/.test(val), {
+      message: "Password must include at least one number.",
+    })
+    .refine((val) => /[^A-Za-z0-9]/.test(val), {
+      message: "Password must include at least one special character.",
+    }),
 });
-
 function hashToken(token) {
   return crypto
     .createHash("sha256")
@@ -46,13 +60,19 @@ export async function POST(req) {
     passwordResetTokenHash: tokenHash,
     passwordResetExpiresAt: { $gt: new Date() },
   });
-
+  if (user.isBanned) {
+    return NextResponse.json(
+      { ok: false, error: "This account has been suspended." },
+      { status: 403 }
+    );
+  }
   if (!user) {
     return NextResponse.json(
       { ok: false, error: "Invalid or expired reset link" },
       { status: 400 }
     );
   }
+
 
   if (user.provider === "google") {
     return NextResponse.json(
@@ -64,9 +84,9 @@ export async function POST(req) {
   user.passwordHash = await bcrypt.hash(parsed.data.password, 12);
   user.passwordResetTokenHash = undefined;
   user.passwordResetExpiresAt = undefined;
-
+  user.forgotPasswordToken = undefined;        
+  user.forgotPasswordTokenExpiry = undefined;
   await user.save();
-
   return NextResponse.json({
     ok: true,
     message: "Password updated. You can now log in.",

@@ -67,41 +67,50 @@ const UpdatePostSchema = z.object({
   publishedAt: OptionalDateSchema,
 });
 
+// api/admin/posts/[id]/route.js — needs to be created
 export async function PATCH(req, { params }) {
   const auth = await requireAdmin();
-  if (!auth.ok) return NextResponse.json({ ok: false, error: auth.error || "Forbidden" }, { status: 403 });
-
-  if (!isDbEnabled()) {
-    return NextResponse.json({ ok: false, error: "Database is disabled. Enable USE_DB=true" }, { status: 400 });
-  }
-
-  const id = params?.id;
-  if (!id) return NextResponse.json({ ok: false, error: "Missing id" }, { status: 400 });
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    return NextResponse.json({ ok: false, error: "Invalid id" }, { status: 400 });
-  }
+  if (!auth.ok) return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
 
   const body = await req.json().catch(() => null);
-  const parsed = UpdatePostSchema.safeParse(body);
+  if (!body) return NextResponse.json({ ok: false, error: "Invalid body" }, { status: 400 });
 
-  if (!parsed.success) return NextResponse.json({ ok: false, error: "Invalid input" }, { status: 400 });
+  if (!isDbEnabled()) {
+    return NextResponse.json({ ok: false, error: "Service unavailable." }, { status: 503 });
+  }
 
   await dbConnect();
 
-  const update = {};
+  const { id } = await params;
 
-  if (parsed.data.title !== undefined) update.title = parsed.data.title;
-  if (parsed.data.excerpt !== undefined) update.excerpt = parsed.data.excerpt;
-  if (parsed.data.coverImage !== undefined) update.coverImage = parsed.data.coverImage;
-  if (parsed.data.images !== undefined) update.images = Array.isArray(parsed.data.images) ? parsed.data.images : [];
-  if (parsed.data.contentHtml !== undefined) update.contentHtml = cleanHtml(parsed.data.contentHtml);
-  if (parsed.data.author !== undefined) update.author = parsed.data.author;
-  if (parsed.data.readTime !== undefined) update.readTime = parsed.data.readTime;
-  if (parsed.data.tags !== undefined) update.tags = Array.isArray(parsed.data.tags) ? parsed.data.tags : [];
-  if (parsed.data.publishedAt !== undefined) update.publishedAt = new Date(parsed.data.publishedAt);
+  // build only the fields being updated
+  const updateFields = {};
 
-  const post = await Post.findByIdAndUpdate(id, update, { new: true }).lean();
-  if (!post) return NextResponse.json({ ok: false, error: "Post not found" }, { status: 404 });
+  if (typeof body.isFlagged === "boolean") {
+    updateFields.isFlagged    = body.isFlagged;
+    updateFields.flaggedReason = body.flaggedReason || "";
+  }
+
+  if (body.status && ["approved", "rejected", "pending"].includes(body.status)) {
+    updateFields.status = body.status;
+    if (body.rejectionReason) {
+      updateFields.rejectionReason = body.rejectionReason;
+    }
+  }
+
+  if (Object.keys(updateFields).length === 0) {
+    return NextResponse.json({ ok: false, error: "Nothing to update" }, { status: 400 });
+  }
+
+  const post = await Post.findByIdAndUpdate(
+    id,
+    { $set: updateFields },
+    { new: true, runValidators: false } // runValidators false — we only update specific fields
+  ).lean();
+
+  if (!post) {
+    return NextResponse.json({ ok: false, error: "Post not found" }, { status: 404 });
+  }
 
   return NextResponse.json({ ok: true, post });
 }

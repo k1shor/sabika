@@ -4,6 +4,8 @@ import bcrypt from "bcryptjs";
 import { User } from "../models/User.js";
 import { Post } from "../models/Post.js";
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 function mustGetEnv(name) {
   const v = process.env[name];
   if (!v) throw new Error(`Missing env: ${name}`);
@@ -20,102 +22,73 @@ function slugify(value) {
     .replace(/(^-|-$)/g, "");
 }
 
-function estimateReadTime(text) {
-  const t = String(text || "")
+function estimateReadTime(html) {
+  const text = String(html || "")
     .replace(/<[^>]*>/g, " ")
     .replace(/\s+/g, " ")
     .trim();
-  const words = t ? t.split(" ").length : 0;
-  const mins = Math.max(2, Math.round(words / 220) || 2);
+  const words = text ? text.split(" ").length : 0;
+  const mins  = Math.max(2, Math.round(words / 220) || 2);
   return `${mins} min read`;
 }
 
-function toList(csv) {
-  return String(csv || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
-
-function makeArticleHtml({ title, intro, bullets, warning, imageUrls }) {
-  const imgs = Array.isArray(imageUrls) ? imageUrls.filter(Boolean) : [];
-  const hero = imgs[0] ? `<p><img src="${imgs[0]}" alt="${title}" /></p>` : "";
-
-  const list =
-    Array.isArray(bullets) && bullets.length
-      ? `<ul>${bullets.map((b) => `<li>${b}</li>`).join("")}</ul>`
-      : "";
-
+function makeHtml({ intro, bullets, warning }) {
+  const list = bullets?.length
+    ? `<ul>${bullets.map((b) => `<li>${b}</li>`).join("")}</ul>`
+    : "";
   const warn = warning ? `<blockquote>${warning}</blockquote>` : "";
-
-  const gallery =
-    imgs.length > 1
-      ? `
-        <hr/>
-        <h3>Gallery</h3>
-        ${imgs
-          .slice(1)
-          .map((u) => `<p><img src="${u}" alt="${title}" /></p>`)
-          .join("")}
-      `
-      : "";
-
-  return `
-    ${hero}
-    <p><strong>${intro}</strong></p>
-    ${list}
-    ${warn}
-    ${gallery}
-  `.trim();
+  return `<p><strong>${intro}</strong></p>${list}${warn}`.trim();
 }
+
+// ─── Connect ──────────────────────────────────────────────────────────────────
 
 async function connect() {
   const uri = mustGetEnv("MONGODB_URI");
   await mongoose.connect(uri);
+  console.log("Connected to MongoDB");
 }
+
+// ─── Seed Admin ───────────────────────────────────────────────────────────────
 
 async function seedAdmin() {
-  const adminEmail = String(process.env.SEED_ADMIN_EMAIL || "admin@nursingnepal.com")
-    .toLowerCase()
-    .trim();
-  const adminPassword = String(process.env.SEED_ADMIN_PASSWORD || "Admin@12345");
-  const adminName = String(process.env.SEED_ADMIN_NAME || "Nursing Nepal Admin").trim();
+  const email    = String(process.env.SEED_ADMIN_EMAIL    || "admin@nursingnepal.com").toLowerCase().trim();
+  const password = String(process.env.SEED_ADMIN_PASSWORD || "Admin@12345");
+  const name     = String(process.env.SEED_ADMIN_NAME     || "Nursing Nepal Admin").trim();
 
-  const passwordHash = await bcrypt.hash(adminPassword, 10);
+  const passwordHash = await bcrypt.hash(password, 12);
 
   const admin = await User.findOneAndUpdate(
-    { email: adminEmail },
-    { name: adminName, email: adminEmail, passwordHash, role: "admin" , isVerified: true},
-    { upsert: true, new: true, setDefaultsOnInsert: true }
+    { email },
+    {
+      name,
+      email,
+      passwordHash,
+      role:       "admin",
+      isAdmin:    true,
+      isVerified: true,           // skip email verification for admin
+      provider:   "credentials",
+      writerVerification: { status: "none" },
+    },
+    { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
   );
 
-  return { admin, adminEmail, adminPassword };
+  console.log("Admin seeded:", email);
+  return { admin, email, password };
 }
 
-async function seedPosts() {
-  const authorDefault = process.env.SEED_AUTHOR || "Nursing Nepal";
+// ─── Seed Sample Posts ────────────────────────────────────────────────────────
 
-  const coverHome = process.env.SEED_COVER_HOME || "";
-  const galleryHome = toList(process.env.SEED_GALLERY_HOME);
-
-  const coverVital = process.env.SEED_COVER_VITAL || "";
-  const galleryVital = toList(process.env.SEED_GALLERY_VITAL);
-
-  const coverWound = process.env.SEED_COVER_WOUND || "";
-  const galleryWound = toList(process.env.SEED_GALLERY_WOUND);
-
-  const posts = [
+async function seedPosts(adminId) {
+  const samplePosts = [
     {
-      title: "Basic Nursing Care at Home: Simple Daily Practices",
-      slug: "basic-nursing-care-at-home",
-      excerpt:
-        "Learn simple and safe nursing care steps families can follow at home to support patients during recovery.",
-      coverImage: coverHome,
-      images: [coverHome, ...galleryHome].filter(Boolean),
-      author: authorDefault,
-      tags: ["home-care", "basic-nursing", "patient-care"],
-      publishedAt: "2026-01-01T10:00:00.000Z",
-      intro: "Home nursing care supports comfort, safety, hygiene, and faster recovery.",
+      title:    "Basic Nursing Care at Home: Simple Daily Practices",
+      slug:     "basic-nursing-care-at-home",
+      excerpt:  "Learn simple and safe nursing care steps families can follow at home to support patients during recovery.",
+      category: "working_nurse",
+      postType: "normal",
+      flair:    "guidance",
+      tags:     ["home care", "patient care", "recovery"],
+      intro:    "Home nursing care supports comfort, safety, hygiene, and faster recovery.",
       bullets: [
         "Maintain clean hygiene and a safe, comfortable environment",
         "Follow medication routines exactly as prescribed",
@@ -126,16 +99,14 @@ async function seedPosts() {
       warning: "Never ignore severe pain, breathing difficulty, or high fever. Seek medical help immediately.",
     },
     {
-      title: "Vital Signs Monitoring: What Nurses Should Know",
-      slug: "vital-signs-monitoring",
-      excerpt:
-        "A quick guide to temperature, pulse, respiration, and blood pressure monitoring with important nursing notes.",
-      coverImage: coverVital,
-      images: [coverVital, ...galleryVital].filter(Boolean),
-      author: authorDefault,
-      tags: ["vital-signs", "nursing-notes", "clinical"],
-      publishedAt: "2026-01-08T14:00:00.000Z",
-      intro: "Vital signs help detect early warning changes in patient condition.",
+      title:    "Vital Signs Monitoring: What Nurses Should Know",
+      slug:     "vital-signs-monitoring",
+      excerpt:  "A quick guide to temperature, pulse, respiration, and blood pressure monitoring with important nursing notes.",
+      category: "nursing_student",
+      postType: "normal",
+      flair:    "tips",
+      tags:     ["vital signs", "clinical", "nursing notes"],
+      intro:    "Vital signs help detect early warning changes in patient condition.",
       bullets: [
         "Temperature: check fever trends and infection risk",
         "Pulse: monitor rate, rhythm, and strength",
@@ -146,16 +117,14 @@ async function seedPosts() {
       warning: "If readings are abnormal with symptoms, escalate to senior nurse or doctor immediately.",
     },
     {
-      title: "Wound Care Basics: Cleaning and Dressing Safely",
-      slug: "wound-care-basics",
-      excerpt:
-        "Learn safe wound cleaning steps, dressing guidelines, and infection prevention tips for patients.",
-      coverImage: coverWound,
-      images: [coverWound, ...galleryWound].filter(Boolean),
-      author: authorDefault,
-      tags: ["wound-care", "infection-control", "safety"],
-      publishedAt: "2026-01-15T09:00:00.000Z",
-      intro: "Proper wound care prevents infection and supports healing.",
+      title:    "Wound Care Basics: Cleaning and Dressing Safely",
+      slug:     "wound-care-basics",
+      excerpt:  "Learn safe wound cleaning steps, dressing guidelines, and infection prevention tips for patients.",
+      category: "working_nurse",
+      postType: "hospital_diary",
+      flair:    "clinical_experience",
+      tags:     ["wound care", "infection control", "safety"],
+      intro:    "Proper wound care prevents infection and supports healing.",
       bullets: [
         "Wash hands before and after dressing changes",
         "Use sterile supplies and gentle cleaning technique",
@@ -165,62 +134,113 @@ async function seedPosts() {
       ],
       warning: "If infection is suspected, consult a healthcare provider immediately.",
     },
+    {
+      title:    "NCLEX Preparation: Tips from a Nurse Who Passed",
+      slug:     "nclex-preparation-tips",
+      excerpt:  "Practical strategies and study tips from a Nepali nurse who successfully cleared the NCLEX exam.",
+      category: "abroad_work",
+      postType: "country_pathway",
+      flair:    "career_journey",
+      tags:     ["NCLEX", "abroad", "exam prep", "USA"],
+      intro:    "Clearing NCLEX requires strategy, consistency, and the right resources.",
+      bullets: [
+        "Start with UWorld — do at least 2000 questions",
+        "Focus on understanding rationale, not memorizing answers",
+        "Study 4-6 hours daily for 3 months minimum",
+        "Join Nepali nurse study groups on Facebook and Telegram",
+        "Apply for ATT early — the process takes time",
+      ],
+      warning: "Requirements vary by state. Always check your state board of nursing website for latest guidelines.",
+    },
+    {
+      title:    "Reality of Hospital Shifts in Nepal: What No One Tells You",
+      slug:     "reality-of-hospital-shifts-nepal",
+      excerpt:  "An honest look at the challenges, emotional weight, and rewarding moments of nursing in Nepali hospitals.",
+      category: "working_nurse",
+      postType: "reality_check",
+      flair:    "workplace_reality",
+      isAnonymous: true,          // posted anonymously — sensitive content
+      tags:     ["hospital life", "Nepal", "burnout", "reality"],
+      intro:    "Nursing in Nepal is deeply rewarding but comes with real challenges that deserve honest conversation.",
+      bullets: [
+        "Long shifts of 12+ hours with minimal breaks are common",
+        "Emotional weight of patient loss is rarely addressed",
+        "Staff shortages mean nurses often cover multiple wards",
+        "Despite challenges, patient gratitude makes it worthwhile",
+        "Community among nurses is strong — lean on each other",
+      ],
+      warning: "If you are experiencing burnout, please reach out to a colleague, mentor, or mental health professional. You are not alone.",
+    },
   ];
 
-  for (const p of posts) {
-    const slug = slugify(p.slug || p.title);
+  let seeded = 0;
 
-    const contentText = `${p.intro}\n\n${(p.bullets || []).join("\n")}\n\n${p.warning || ""}`.trim();
-    const readTime = estimateReadTime(contentText);
-
-    const contentHtml = makeArticleHtml({
-      title: p.title,
-      intro: p.intro,
-      bullets: p.bullets,
-      warning: p.warning,
-      imageUrls: p.images,
-    });
+  for (const p of samplePosts) {
+    const slug        = slugify(p.slug || p.title);
+    const contentHtml = makeHtml({ intro: p.intro, bullets: p.bullets, warning: p.warning });
+    const readTime    = estimateReadTime(contentHtml);
 
     await Post.findOneAndUpdate(
       { slug },
       {
-        title: p.title,
+        title:       p.title,
         slug,
-        excerpt: p.excerpt || "",
+        excerpt:     p.excerpt || "",
         contentHtml,
-        tags: Array.isArray(p.tags) ? p.tags : [],
-        author: p.author || authorDefault,
-        publishedAt: p.publishedAt ? new Date(p.publishedAt) : new Date(),
+        coverImage:  "",
+        images:      [],
+
+        // ✅ required fields matching current Post model
+        authorId:    adminId,
+        isAnonymous: p.isAnonymous || false,
+        category:    p.category,
+        postType:    p.postType  || "normal",
+        flair:       p.flair     || "",
+        tags:        Array.isArray(p.tags) ? p.tags : [],
+
+        // ✅ approved so they show publicly
+        status:      "approved",
+        isFlagged:   false,
+
+        // engagement
+        views:       0,
+        likesCount:  0,
+
         readTime,
-        coverImage: p.coverImage || "",
-        images: Array.isArray(p.images) ? p.images : [],
+        publishedAt: new Date(),
       },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
     );
+
+    seeded++;
   }
 
-  const count = await Post.countDocuments();
-  return { count };
+  console.log(`✅ ${seeded} sample posts seeded`);
+  return seeded;
 }
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function run() {
   await connect();
 
-  const { adminEmail, adminPassword } = await seedAdmin();
-  const { count } = await seedPosts();
+  const { admin, email, password } = await seedAdmin();
+  await seedPosts(admin._id);
 
-  console.log("✅ Seed complete");
-  console.log("Admin email:", adminEmail);
-  console.log("Admin password:", adminPassword);
-  console.log("Total posts:", count);
+  console.log("\n─────────────────────────────────");
+  console.log("Seed complete!");
+  console.log("─────────────────────────────────");
+  console.log("Admin email:   ", email);
+  console.log("Admin password:", password);
+  console.log("─────────────────────────────────");
+  console.log("Login at /login and change your password after first login!");
+  console.log("─────────────────────────────────\n");
 
   await mongoose.disconnect();
 }
 
-run().catch(async (e) => {
-  console.error("❌ Seed failed:", e);
-  try {
-    await mongoose.disconnect();
-  } catch {}
+run().catch(async (err) => {
+  console.error("Seed failed:", err.message);
+  try { await mongoose.disconnect(); } catch {}
   process.exit(1);
 });

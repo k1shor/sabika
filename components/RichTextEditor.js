@@ -17,8 +17,7 @@ export default function RichTextEditor({ value, onChange, onUploadImage }) {
     content: value || "",
     editorProps: {
       attributes: {
-        class:
-          "prose prose-slate max-w-none focus:outline-none dark:prose-invert",
+        class: "blog-rich-content min-h-60 max-w-none focus:outline-none",
       },
     },
     onUpdate({ editor }) {
@@ -52,6 +51,13 @@ export default function RichTextEditor({ value, onChange, onUploadImage }) {
     editor.chain().focus().setLink({ href: href.trim() }).run();
   };
 
+  const toolbarButton = (active) =>
+    `rounded-xl border px-3 py-2 text-sm font-extrabold transition ${
+      active
+        ? "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-400/40 dark:bg-blue-500/15 dark:text-blue-100"
+        : "border-slate-200 bg-white/80 text-slate-800 hover:bg-white dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-blue-100 dark:hover:bg-blue-950/45"
+    }`;
+
   if (!editor) return null;
 
   return (
@@ -60,8 +66,7 @@ export default function RichTextEditor({ value, onChange, onUploadImage }) {
         <button
           type="button"
           onClick={() => editor.chain().focus().toggleBold().run()}
-          className="rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm font-extrabold text-slate-800 hover:bg-white transition
-          dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-blue-100 dark:hover:bg-blue-950/45"
+          className={toolbarButton(editor.isActive("bold"))}
         >
           Bold
         </button>
@@ -69,8 +74,7 @@ export default function RichTextEditor({ value, onChange, onUploadImage }) {
         <button
           type="button"
           onClick={() => editor.chain().focus().toggleItalic().run()}
-          className="rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm font-extrabold text-slate-800 hover:bg-white transition
-          dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-blue-100 dark:hover:bg-blue-950/45"
+          className={toolbarButton(editor.isActive("italic"))}
         >
           Italic
         </button>
@@ -78,8 +82,7 @@ export default function RichTextEditor({ value, onChange, onUploadImage }) {
         <button
           type="button"
           onClick={() => editor.chain().focus().toggleBulletList().run()}
-          className="rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm font-extrabold text-slate-800 hover:bg-white transition
-          dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-blue-100 dark:hover:bg-blue-950/45"
+          className={toolbarButton(editor.isActive("bulletList"))}
         >
           Bullets
         </button>
@@ -87,8 +90,7 @@ export default function RichTextEditor({ value, onChange, onUploadImage }) {
         <button
           type="button"
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          className="rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm font-extrabold text-slate-800 hover:bg-white transition
-          dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-blue-100 dark:hover:bg-blue-950/45"
+          className={toolbarButton(editor.isActive("orderedList"))}
         >
           Numbered
         </button>
@@ -96,8 +98,7 @@ export default function RichTextEditor({ value, onChange, onUploadImage }) {
         <button
           type="button"
           onClick={() => editor.chain().focus().toggleBlockquote().run()}
-          className="rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm font-extrabold text-slate-800 hover:bg-white transition
-          dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-blue-100 dark:hover:bg-blue-950/45"
+          className={toolbarButton(editor.isActive("blockquote"))}
         >
           Quote
         </button>
@@ -105,8 +106,7 @@ export default function RichTextEditor({ value, onChange, onUploadImage }) {
         <button
           type="button"
           onClick={() => editor.chain().focus().setHorizontalRule().run()}
-          className="rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm font-extrabold text-slate-800 hover:bg-white transition
-          dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-blue-100 dark:hover:bg-blue-950/45"
+          className={toolbarButton(false)}
         >
           Divider
         </button>
@@ -114,8 +114,7 @@ export default function RichTextEditor({ value, onChange, onUploadImage }) {
         <button
           type="button"
           onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-          className="rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm font-extrabold text-slate-800 hover:bg-white transition
-          dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-blue-100 dark:hover:bg-blue-950/45"
+          className={toolbarButton(editor.isActive("heading", { level: 2 }))}
         >
           H2
         </button>
@@ -123,8 +122,7 @@ export default function RichTextEditor({ value, onChange, onUploadImage }) {
         <button
           type="button"
           onClick={setLink}
-          className="rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm font-extrabold text-slate-800 hover:bg-white transition
-          dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-blue-100 dark:hover:bg-blue-950/45"
+          className={toolbarButton(editor.isActive("link"))}
         >
           Link
         </button>
