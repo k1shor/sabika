@@ -106,24 +106,49 @@ export async function PATCH(req, { params }) {
   return NextResponse.json({ ok: true, post });
 }
 
-export async function DELETE(_req, { params }) {
+export async function DELETE(_req, context) {
   const auth = await requireAdmin();
-  if (!auth.ok) return NextResponse.json({ ok: false, error: auth.error || "Forbidden" }, { status: 403 });
 
-  if (!isDbEnabled()) {
-    return NextResponse.json({ ok: false, error: "Database is disabled. Enable USE_DB=true" }, { status: 400 });
+  if (!auth.ok) {
+    return NextResponse.json(
+      { ok: false, error: auth.error || "Forbidden" },
+      { status: 403 }
+    );
   }
 
-  const id = params?.id;
-  if (!id) return NextResponse.json({ ok: false, error: "Missing id" }, { status: 400 });
+  if (!isDbEnabled()) {
+    return NextResponse.json(
+      { ok: false, error: "Database is disabled. Enable USE_DB=true" },
+      { status: 400 }
+    );
+  }
+
+  const { id } = await context.params;
+
+  if (!id) {
+    return NextResponse.json(
+      { ok: false, error: "Missing id" },
+      { status: 400 }
+    );
+  }
+
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    return NextResponse.json({ ok: false, error: "Invalid id" }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "Invalid id" },
+      { status: 400 }
+    );
   }
 
   await dbConnect();
 
   const deleted = await Post.findByIdAndDelete(id).lean();
-  if (!deleted) return NextResponse.json({ ok: false, error: "Post not found" }, { status: 404 });
+
+  if (!deleted) {
+    return NextResponse.json(
+      { ok: false, error: "Post not found" },
+      { status: 404 }
+    );
+  }
 
   return NextResponse.json({ ok: true });
 }
