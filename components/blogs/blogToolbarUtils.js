@@ -13,6 +13,18 @@ export const POST_TYPE_LABELS = {
   country_pathway: "Country Pathway",
 };
 
+export const POST_TYPE_COLORS = {
+  reality_check: "bg-red-50 text-red-600 border-red-200 dark:bg-red-950/20 dark:text-red-400 dark:border-red-500/20",
+  hospital_diary: "bg-purple-50 text-purple-600 border-purple-200 dark:bg-purple-950/20 dark:text-purple-400",
+  country_pathway: "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400",
+};
+
+export function formatPostDate(value) {
+  const date = new Date(value || 0);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
 export function getPostTypes(posts) {
   return Array.from(new Set(posts.map((post) => post.postType).filter(Boolean)));
 }

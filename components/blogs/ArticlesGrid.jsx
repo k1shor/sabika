@@ -1,6 +1,6 @@
 "use client";
 
-import BlogCard from "@/components/BlogCard";
+import BlogCard from "@/components/blogs/BlogCard";
 
 export default function ArticlesGrid({ posts }) {
   return (

@@ -5,10 +5,10 @@ import { DUMMY_POSTS } from "@/lib/dummy";
 import { isDbEnabled } from "@/lib/db";
 import { getAuthUser } from "@/lib/auth";
 import Button from "@/components/Button";
-import BlogHistoryTracker from "@/components/BlogHistoryTracker";
+import BlogHistoryTracker from "@/components/blogs/BlogHistoryTracker";
 import SavePostButton from "@/components/SavePostButton";
 import DeletePostButton from "@/components/DeletePostButton";
-import BlogDetailAnimated from "@/components/BlogDetailAnimated";
+import BlogDetailAnimated from "@/components/blogs/BlogDetailAnimated";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

@@ -1,6 +1,6 @@
 import Container from "@/components/Container";
-import BlogsToolbar from "@/components/BlogsToolbar";
-import { DUMMY_POSTS } from "@/lib/dummy";
+import BlogsToolbar from "@/components/blogs/BlogsToolbar";
+import { DUMMY_POSTS, normalizeOfficialSamplePost } from "@/lib/dummy";
 import { dbConnect, isDbEnabled } from "@/lib/db";
 import { Post } from "@/models/Post";
 import AnimatedBlogsHeader from "./AnimatedBlogsHeader";
@@ -9,28 +9,30 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function serializePost(post) {
+  const normalizedPost = normalizeOfficialSamplePost(post);
+
   return {
-    _id:         post._id         ? String(post._id)                    : undefined,
-    title:       post.title       || "",
-    slug:        post.slug        || "",
-    excerpt:     post.excerpt     || "",
-    coverImage:  post.coverImage  || "",
-    category:    post.category    || "",
-    postType:    post.postType    || "normal",
-    tags:        Array.isArray(post.tags) ? post.tags : [],
-    readTime:    post.readTime    || "",
-    views:       post.views       || 0,
-    likesCount:  post.likesCount  || 0,
-    isAnonymous: post.isAnonymous || false,
-    isOfficialPost: post.isOfficialPost || false,
-    publishedAt: post.publishedAt instanceof Date ? post.publishedAt.toISOString() : post.publishedAt,
-    createdAt:   post.createdAt   instanceof Date ? post.createdAt.toISOString()   : post.createdAt,
+    _id:         normalizedPost._id         ? String(normalizedPost._id)                    : undefined,
+    title:       normalizedPost.title       || "",
+    slug:        normalizedPost.slug        || "",
+    excerpt:     normalizedPost.excerpt     || "",
+    coverImage:  normalizedPost.coverImage  || "",
+    category:    normalizedPost.category    || "",
+    postType:    normalizedPost.postType    || "normal",
+    tags:        Array.isArray(normalizedPost.tags) ? normalizedPost.tags : [],
+    readTime:    normalizedPost.readTime    || "",
+    views:       normalizedPost.views       || 0,
+    likesCount:  normalizedPost.likesCount  || 0,
+    isAnonymous: normalizedPost.isAnonymous || false,
+    isOfficialPost: normalizedPost.isOfficialPost || false,
+    publishedAt: normalizedPost.publishedAt instanceof Date ? normalizedPost.publishedAt.toISOString() : normalizedPost.publishedAt,
+    createdAt:   normalizedPost.createdAt   instanceof Date ? normalizedPost.createdAt.toISOString()   : normalizedPost.createdAt,
     // author info — safe for anonymous
-    authorId: post.isAnonymous ? null : (post.authorId ? {
-      _id:      String(post.authorId._id || post.authorId),
-      name:     post.authorId.name     || "",
-      avatarUrl: post.authorId.avatarUrl || "",
-      badge:    post.authorId.badge    || "",
+    authorId: normalizedPost.isAnonymous || normalizedPost.isOfficialPost ? null : (normalizedPost.authorId ? {
+      _id:      String(normalizedPost.authorId._id || normalizedPost.authorId),
+      name:     normalizedPost.authorId.name     || "",
+      avatarUrl: normalizedPost.authorId.avatarUrl || "",
+      badge:    normalizedPost.authorId.badge    || "",
     } : null),
   };
 }
