@@ -13,11 +13,7 @@ const fadeUp = {
 
 export default function BlogDetailAnimated({ children }) {
   return (
-    <motion.div
-      initial="hidden"
-      animate="show"
-      variants={fadeUp}
-    >
+    <motion.div initial="hidden" animate="show" variants={fadeUp}>
       {children}
     </motion.div>
   );

@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 
 const HISTORY_KEY = "blog_view_history";
-const HISTORY_TTL_MS = 24 * 60 * 60 * 1000; // change to 10 * 1000 for testing
+const HISTORY_TTL_MS = 24 * 60 * 60 * 1000;
 
 export default function BlogHistoryTracker({ post }) {
   useEffect(() => {
@@ -12,13 +12,8 @@ export default function BlogHistoryTracker({ post }) {
     const now = Date.now();
     const raw = localStorage.getItem(HISTORY_KEY);
     const oldItems = raw ? JSON.parse(raw) : [];
-
-    const validItems = oldItems.filter(
-      (item) => now - item.viewedAt < HISTORY_TTL_MS
-    );
-
+    const validItems = oldItems.filter((item) => now - item.viewedAt < HISTORY_TTL_MS);
     const withoutCurrent = validItems.filter((item) => item.slug !== post.slug);
-
     const nextItems = [
       {
         slug: post.slug,
