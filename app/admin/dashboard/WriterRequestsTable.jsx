@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 
 function formatCategory(cat) {
-  if (!cat) return "—";
+  if (!cat) return "\u2014";
   return cat.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
@@ -12,8 +12,14 @@ function WriterCard({ writer, onAction }) {
   const [loading, setLoading] = useState("");
 
   const handle = async (action) => {
+    let reason = "";
+    if (action === "rejected") {
+      const input = window.prompt("Reason for rejecting this writer (shown to them):", "");
+      if (input === null) return; // cancelled
+      reason = input.trim();
+    }
     setLoading(action);
-    await onAction(writer._id, action);
+    await onAction(writer._id, action, reason);
     setLoading("");
   };
 
@@ -45,7 +51,7 @@ function WriterCard({ writer, onAction }) {
           <p className="text-slate-400 dark:text-blue-100/40 font-semibold uppercase tracking-wide text-[10px]">Workplace</p>
           <p className="text-slate-700 dark:text-blue-100/80">{writer.workplace}</p>
         </div>
-        {writer.licenseNo && writer.licenseNo !== "—" && (
+        {writer.licenseNo && writer.licenseNo !== "\u2014" && (
           <div>
             <p className="text-slate-400 dark:text-blue-100/40 font-semibold uppercase tracking-wide text-[10px]">License No.</p>
             <p className="text-slate-700 dark:text-blue-100/80">{writer.licenseNo}</p>
@@ -56,7 +62,7 @@ function WriterCard({ writer, onAction }) {
             <p className="text-slate-400 dark:text-blue-100/40 font-semibold uppercase tracking-wide text-[10px]">Document</p>
             <a href={writer.documentUrl} target="_blank" rel="noreferrer"
               className="text-blue-600 hover:underline dark:text-blue-400">
-              View doc ↗
+              View doc \u2197
             </a>
           </div>
         )}
@@ -75,7 +81,7 @@ function WriterCard({ writer, onAction }) {
           disabled={!!loading}
           className="flex-1 rounded-lg border border-red-200 bg-white py-2 text-xs font-bold text-red-600 hover:bg-red-50 transition disabled:opacity-50 dark:border-red-400/20 dark:bg-transparent dark:text-red-400"
         >
-          {loading === "rejected" ? "..." : "Reject ✕"}
+          {loading === "rejected" ? "..." : "Reject \u2715"}
         </button>
       </div>
     </div>
@@ -85,11 +91,11 @@ function WriterCard({ writer, onAction }) {
 export default function WriterRequestsTable({ initialWriters = [] }) {
   const [writers, setWriters] = useState(initialWriters);
 
-  const handleAction = async (id, status) => {
+  const handleAction = async (id, status, rejectionReason = "") => {
     const res = await fetch(`/api/admin/writer-applications/${id}`, {
       method:  "PATCH",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ status }),
+      body:    JSON.stringify({ status, rejectionReason }),
     });
     const data = await res.json().catch(() => null);
     if (data?.ok) {
@@ -110,7 +116,7 @@ export default function WriterRequestsTable({ initialWriters = [] }) {
         </p>
         <Link href="/admin/writer-applications"
           className="text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400">
-          View all →
+          View all \u2192
         </Link>
       </div>
 

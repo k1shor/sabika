@@ -9,7 +9,7 @@ export default function IdentityOptionCard({ icon, title, color, points, index }
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay: index * 0.15 }}
-      className="rounded-2xl border border-slate-200 bg-white/80 p-6 backdrop-blur-sm"
+      className="rounded-2xl border border-slate-200 bg-white/80 p-6 backdrop-blur-sm dark:border-blue-400/20 dark:bg-blue-950/25"
     >
       <div className="flex items-center gap-3 mb-4">
         <div
@@ -18,12 +18,12 @@ export default function IdentityOptionCard({ icon, title, color, points, index }
         >
           {icon}
         </div>
-        <h3 className="font-bold text-slate-800">{title}</h3>
+        <h3 className="font-bold text-slate-800 dark:text-white">{title}</h3>
       </div>
 
       <ul className="space-y-2.5">
         {points.map((point) => (
-          <li key={point} className="flex items-start gap-2 text-sm text-slate-600">
+          <li key={point} className="flex items-start gap-2 text-sm text-slate-600 dark:text-blue-100/70">
             <span
               className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full"
               style={{ background: color }}

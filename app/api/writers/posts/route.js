@@ -59,7 +59,9 @@ const WriterPostSchema = z.object({
     { errorMap: () => ({ message: "Please select a valid category" }) }
   ),
   postType:    z.enum(["normal", "reality_check", "hospital_diary", "country_pathway"]).default("normal"),
+  flair:       z.enum(["", "tips", "tricks", "guidance", "clinical_experience", "career_journey", "workplace_reality", "story"]).default(""),
   isAnonymous: z.boolean().default(false),
+  saveAsDraft: z.boolean().default(false),
 });
 
 function serializePost(post) {
@@ -70,21 +72,19 @@ function serializePost(post) {
     excerpt:     post.excerpt || "",
     coverImage:  post.coverImage || "",
     tags:        post.tags || [],
-    author:      post.author || "",
+    status:      post.status || "pending",
     readTime:    post.readTime || "",
     publishedAt: post.publishedAt instanceof Date ? post.publishedAt.toISOString() : post.publishedAt,
     createdAt:   post.createdAt instanceof Date ? post.createdAt.toISOString() : post.createdAt,
   };
 }
 
-// ── Helper: resolve why a writer isn't approved ──────────────────────────────
 function getWriterBlockReason(user) {
   if (!user) return { code: "UNAUTHORIZED", status: 401 };
 
   const vs = user.writerVerification?.status;
 
   if (user.role !== "blog_writer") {
-    // They never applied — no writerVerification at all
     return { code: "NOT_APPLIED", status: 403 };
   }
   if (vs === "pending") {
@@ -93,7 +93,6 @@ function getWriterBlockReason(user) {
   if (vs === "rejected") {
     return { code: "APPROVAL_REJECTED", status: 403 };
   }
-  // role is blog_writer but status isn't approved (e.g. "none" or missing)
   return { code: "NOT_APPROVED", status: 403 };
 }
 
@@ -175,6 +174,31 @@ export async function POST(req) {
   }
 
   try {
+    const isAdmin = auth.user.role === "admin";
+
+    // Trust tier: a writer's first 3 posts always go through manual
+    // review. After 3 clean approvals with zero rejections, future
+    // posts auto-publish -- computed live from Post records (not a
+    // cached counter), so it can never drift out of sync. A rejection
+    // at any point resets them back to needing review until they
+    // rebuild 3 clean approvals again.
+    let isTrustedWriter = false;
+    if (!isAdmin && !parsed.data.saveAsDraft) {
+      const [approvedCount, rejectedCount] = await Promise.all([
+        Post.countDocuments({ authorId: auth.user.id, status: "approved" }),
+        Post.countDocuments({ authorId: auth.user.id, status: "rejected" }),
+      ]);
+      isTrustedWriter = approvedCount >= 3 && rejectedCount === 0;
+    }
+
+    const status = isAdmin
+      ? "approved"
+      : parsed.data.saveAsDraft
+        ? "draft"
+        : isTrustedWriter
+          ? "approved"
+          : "pending";
+
     const post = await Post.create({
       title:       parsed.data.title,
       slug,
@@ -183,46 +207,62 @@ export async function POST(req) {
       images:      Array.isArray(parsed.data.images) ? parsed.data.images : [],
       contentHtml: sanitizedHtml,
       tags:        Array.isArray(parsed.data.tags) ? parsed.data.tags : [],
-      author:      auth.user.name || "Nursing Nepal Writer",
       authorId:    auth.user.id,
       readTime:    parsed.data.readTime || "5 min read",
-      publishedAt: new Date(),
+      status,
+      publishedAt: status === "approved" ? new Date() : undefined,
       category:    parsed.data.category,
       postType:    parsed.data.postType || "normal",
+      flair:       parsed.data.flair || "",
       isAnonymous: parsed.data.isAnonymous || false,
     });
 
-    const [followers, admins] = await Promise.all([
-      Follow.find({ writerId: auth.user.id }).lean(),
-      User.find({ role: "admin" }, { _id: 1 }).lean(),
-    ]);
+    const admins = await User.find({ role: "admin" }, { _id: 1 }).lean();
+    let notifications = [];
 
-    const notifications = [
-      ...followers.map((follow) => ({
+    if (status === "draft") {
+      // Draft -- nothing to notify anyone about yet.
+    } else if (status === "approved") {
+      // Live immediately (admin OR a trusted writer's auto-approved
+      // post) -- safe to tell followers now.
+      const followers = await Follow.find({ writerId: auth.user.id }).lean();
+      notifications = followers.map((follow) => ({
         userId:   follow.followerId,
-        writerId: auth.user.id,
+        actorId:  auth.user.id,
+        postId:   post._id,
         type:     "new_post",
         postSlug: post.slug,
         message:  `${auth.user.name || "A writer"} published a new post: ${post.title}`,
         read:     false,
-      })),
-      ...admins
-        .filter((admin) => String(admin._id) !== String(auth.user.id))
-        .map((admin) => ({
-          userId:   admin._id,
-          writerId: auth.user.id,
-          type:     "new_post",
-          postSlug: post.slug,
-          message:  `${auth.user.name || "A writer"} published a new post: ${post.title}`,
-          read:     false,
-        })),
-    ];
+      }));
+    } else {
+      // Not visible yet -- only notify admins that review is needed.
+      // Followers get notified separately once the post is approved.
+      notifications = admins.map((admin) => ({
+        userId:   admin._id,
+        actorId:  auth.user.id,
+        postId:   post._id,
+        type:     "post_pending_review",
+        postSlug: post.slug,
+        message:  `${auth.user.name || "A writer"} submitted a post for review: ${post.title}`,
+        read:     false,
+      }));
+    }
 
     if (notifications.length > 0) {
       await Notification.insertMany(notifications);
     }
 
-    return NextResponse.json({ ok: true, post: serializePost(post), followerCount: followers.length });
+    return NextResponse.json({
+      ok: true,
+      post: serializePost(post),
+      message:
+        status === "draft"
+          ? "Post saved as draft."
+          : status === "approved"
+            ? "Post published."
+            : "Post submitted for review. It will go live once approved.",
+    });
 
   } catch (err) {
     console.error("Post.create error:", err);

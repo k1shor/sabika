@@ -71,67 +71,67 @@ export async function GET(req) {
   });
 }
 
-export async function POST(req) {
-  const auth = await getAuthUser();
-if (!auth) {
-  return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
-}
-// Admin bypasses writer check, writers still need approval
-if (auth.role !== "admin") {
-  const writerCheck = await requireApprovedWriter();
-  if (!writerCheck.ok) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: writerCheck.error || "Unauthorized",
-        next: writerCheck.error === "Writer approval required" ? "/apply-writer" : undefined,
-      },
-      { status: writerCheck.error === "Unauthorized" ? 401 : 403 }
-    );
-  }
-}
-  const body = await req.json().catch(() => null);
-  if (!body) return NextResponse.json({ ok: false, error: "Invalid body" }, { status: 400 });
+// export async function POST(req) {
+//   const auth = await getAuthUser();
+// if (!auth) {
+//   return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+// }
+// // Admin bypasses writer check, writers still need approval
+// if (auth.role !== "admin") {
+//   const writerCheck = await requireApprovedWriter();
+//   if (!writerCheck.ok) {
+//     return NextResponse.json(
+//       {
+//         ok: false,
+//         error: writerCheck.error || "Unauthorized",
+//         next: writerCheck.error === "Writer approval required" ? "/apply-writer" : undefined,
+//       },
+//       { status: writerCheck.error === "Unauthorized" ? 401 : 403 }
+//     );
+//   }
+// }
+//   const body = await req.json().catch(() => null);
+//   if (!body) return NextResponse.json({ ok: false, error: "Invalid body" }, { status: 400 });
 
-  const parsed = PostCreateSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({
-      ok: false,
-      error: "Invalid data",
-      fields: parsed.error.flatten().fieldErrors, // ✅ field-wise errors
-    }, { status: 400 });
-  }
+//   const parsed = PostCreateSchema.safeParse(body);
+//   if (!parsed.success) {
+//     return NextResponse.json({
+//       ok: false,
+//       error: "Invalid data",
+//       fields: parsed.error.flatten().fieldErrors, // ✅ field-wise errors
+//     }, { status: 400 });
+//   }
 
-  if (!isDbEnabled()) {
-    return NextResponse.json({ ok: false, error: "USE_DB=false" }, { status: 503 });
-  }
+//   if (!isDbEnabled()) {
+//     return NextResponse.json({ ok: false, error: "USE_DB=false" }, { status: 503 });
+//   }
 
-  await dbConnect();
+//   await dbConnect();
 
-  const isAutoApproved = parsed.data.postType !== "reality_check";
+//   const isAutoApproved = parsed.data.postType !== "reality_check";
 
-  const created = await Post.create({
-    ...parsed.data,
-    authorId:       auth.user.id,
-    isOfficialPost: auth.user.role === "admin",
-    status:         isAutoApproved ? "approved" : "pending",
-    publishedAt:    isAutoApproved ? new Date() : undefined,
-  });
+//   const created = await Post.create({
+//     ...parsed.data,
+//     authorId:       auth.user.id,
+//     isOfficialPost: auth.user.role === "admin",
+//     status:         isAutoApproved ? "approved" : "pending",
+//     publishedAt:    isAutoApproved ? new Date() : undefined,
+//   });
 
-  const followers = await Follow.find({ writerId: auth.user.id }).lean();
-  if (isAutoApproved && followers.length > 0) {
-    await Notification.insertMany(
-      followers.map((follow) => ({
-        userId:   follow.followerId,
-        actorId:  auth.user.id,
-        type:     "new_post",
-        postId:   created._id,
-        postSlug: created.slug,
-        message:  `${auth.user.name} published: ${created.title}`,
-        read:     false,
-      }))
-    );
-  }
+//   const followers = await Follow.find({ writerId: auth.user.id }).lean();
+//   if (isAutoApproved && followers.length > 0) {
+//     await Notification.insertMany(
+//       followers.map((follow) => ({
+//         userId:   follow.followerId,
+//         actorId:  auth.user.id,
+//         type:     "new_post",
+//         postId:   created._id,
+//         postSlug: created.slug,
+//         message:  `${auth.user.name} published: ${created.title}`,
+//         read:     false,
+//       }))
+//     );
+//   }
 
-  return NextResponse.json({ ok: true, post: created }, { status: 201 });
-}
+//   return NextResponse.json({ ok: true, post: created }, { status: 201 });
+// }

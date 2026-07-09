@@ -21,19 +21,24 @@ function serializeMessage(message) {
 }
 
 export async function GET() {
-  const auth = await requireAdmin();
-  if (!auth.ok) return NextResponse.json({ ok: false, error: auth.error || "Forbidden" }, { status: 403 });
+  try {
+    const auth = await requireAdmin();
+    if (!auth.ok) return NextResponse.json({ ok: false, error: auth.error || "Forbidden" }, { status: 403 });
 
-  if (!isDbEnabled()) {
-    return NextResponse.json({ ok: false, error: "Database is disabled. Enable USE_DB=true" }, { status: 400 });
+    if (!isDbEnabled()) {
+      return NextResponse.json({ ok: false, error: "Database is disabled. Enable USE_DB=true" }, { status: 400 });
+    }
+
+    await dbConnect();
+
+    const messages = await ContactMessage.find({})
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .lean();
+
+    return NextResponse.json({ ok: true, messages: messages.map(serializeMessage) });
+  } catch (err) {
+    console.error("GET /api/admin/contact-messages:", err);
+    return NextResponse.json({ ok: false, error: "Server error" }, { status: 500 });
   }
-
-  await dbConnect();
-
-  const messages = await ContactMessage.find({})
-    .sort({ createdAt: -1 })
-    .limit(100)
-    .lean();
-
-  return NextResponse.json({ ok: true, messages: messages.map(serializeMessage) });
 }

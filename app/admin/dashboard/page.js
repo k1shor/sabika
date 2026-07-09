@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-// import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { dbConnect } from "@/lib/db";
 import { User } from "@/models/User";
@@ -8,24 +7,12 @@ import AdminDashboardTabs from "./AdminDashboardTabs";
 
 export const dynamic = "force-dynamic";
 
-// function timeAgo(date) {
-//   if (!date) return "";
-//   const diff  = Date.now() - new Date(date).getTime();
-//   const mins  = Math.floor(diff / 60000);
-//   const hours = Math.floor(diff / 3600000);
-//   const days  = Math.floor(diff / 86400000);
-//   if (mins  < 60) return `${mins}m ago`;
-//   if (hours < 24) return `${hours}h ago`;
-//   return `${days}d ago`;
-// }
-
 export default async function AdminDashboardPage() {
   const auth = await requireAdmin();
   if (!auth.ok) redirect("/login?next=/admin/dashboard");
 
   await dbConnect();
 
-  // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
   const sevenDaysAgo = new Date(now - 7  * 24 * 60 * 60 * 1000);
   const fiveWeeksAgo = new Date(now - 35 * 24 * 60 * 60 * 1000);
@@ -63,7 +50,10 @@ export default async function AdminDashboardPage() {
     ).sort({ "writerVerification.submittedAt": -1 }).limit(10).lean(),
     User.find({}, { name: 1, createdAt: 1, "writerVerification.status": 1 })
       .sort({ createdAt: -1 }).limit(5).lean(),
-    Post.find({}, { title: 1, authorId: 1, createdAt: 1 })
+    // Only "approved" posts are actually live -- pulling from all
+    // statuses here made the activity feed label pending/draft/rejected
+    // posts as "published a new blog", which was never true.
+    Post.find({ status: "approved" }, { title: 1, authorId: 1, createdAt: 1 })
       .populate("authorId", "name")
       .sort({ createdAt: -1 }).limit(5).lean(),
   ]);
@@ -98,8 +88,8 @@ export default async function AdminDashboardPage() {
     name:        u.name  || "",
     email:       u.email || "",
     category:    u.writerVerification?.category    || "",
-    workplace:   u.writerVerification?.workplace   || "—",
-    licenseNo:   u.writerVerification?.licenseNo   || "—",
+    workplace:   u.writerVerification?.workplace   || "\u2014",
+    licenseNo:   u.writerVerification?.licenseNo   || "\u2014",
     documentUrl: u.writerVerification?.documentUrl || "",
     submittedAt: u.writerVerification?.submittedAt
       ? new Date(u.writerVerification.submittedAt).toISOString()

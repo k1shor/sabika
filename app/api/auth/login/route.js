@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { dbConnect, isDbEnabled } from "@/lib/db";
 import { User } from "@/models/User";
-import { signToken } from "@/lib/auth";
+import { signToken, normalizeRole } from "@/lib/auth";
 
 const LoginSchema = z.object({
   email: z.string().email(),
@@ -44,7 +44,6 @@ export async function POST(req) {
 
     const user = await User.findOne({ email });
 
-    // No user found at all
     if (!user) {
       return NextResponse.json(
         { ok: false, code: "USER_NOT_FOUND", error: "No account found with this email. Please register first." },
@@ -52,7 +51,6 @@ export async function POST(req) {
       );
     }
 
-    // User exists but signed up with Google (no password)
     if (!user.passwordHash) {
       return NextResponse.json(
         { ok: false, code: "GOOGLE_ACCOUNT", error: "This account uses Google login. Please use Login with Google." },
@@ -60,7 +58,6 @@ export async function POST(req) {
       );
     }
 
-    // Wrong password
     const passwordMatches = await bcrypt.compare(password, user.passwordHash);
     if (!passwordMatches) {
       return NextResponse.json(
@@ -69,7 +66,6 @@ export async function POST(req) {
       );
     }
 
-    // Banned
     if (user.isBanned) {
       return NextResponse.json(
         { ok: false, code: "ACCOUNT_DISABLED", error: "Your account has been suspended. Please contact support." },
@@ -77,7 +73,6 @@ export async function POST(req) {
       );
     }
 
-    // Email not verified
     if (!user.isVerified) {
       return NextResponse.json(
         { ok: false, code: "EMAIL_NOT_VERIFIED", error: "Your email is not verified. Please check your inbox and verify your account." },
@@ -85,11 +80,7 @@ export async function POST(req) {
       );
     }
 
-    const role = user.isAdmin
-      ? "admin"
-      : ["visitor", "blog_writer", "admin"].includes(user.role)
-        ? user.role
-        : "visitor";
+    const role = normalizeRole(user);
 
     const token = signToken({
       id: user._id,

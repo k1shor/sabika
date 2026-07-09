@@ -26,20 +26,25 @@ function serializeApplication(user) {
 }
 
 export async function GET() {
-  const auth = await requireAdmin();
-  if (!auth.ok) return NextResponse.json({ ok: false, error: auth.error || "Forbidden" }, { status: 403 });
+  try {
+    const auth = await requireAdmin();
+    if (!auth.ok) return NextResponse.json({ ok: false, error: auth.error || "Forbidden" }, { status: 403 });
 
-  if (!isDbEnabled()) {
-    return NextResponse.json({ ok: false, error: "Database is disabled. Enable USE_DB=true" }, { status: 400 });
+    if (!isDbEnabled()) {
+      return NextResponse.json({ ok: false, error: "Database is disabled. Enable USE_DB=true" }, { status: 400 });
+    }
+
+    await dbConnect();
+
+    const users = await User.find({
+      "writerVerification.status": { $in: ["pending", "approved", "rejected"] },
+    })
+      .sort({ "writerVerification.submittedAt": -1 })
+      .lean();
+
+    return NextResponse.json({ ok: true, applications: users.map(serializeApplication) });
+  } catch (err) {
+    console.error("GET /api/admin/writer-applications:", err);
+    return NextResponse.json({ ok: false, error: "Server error" }, { status: 500 });
   }
-
-  await dbConnect();
-
-  const users = await User.find({
-    "writerVerification.status": { $in: ["pending", "approved", "rejected"] },
-  })
-    .sort({ "writerVerification.submittedAt": -1 })
-    .lean();
-
-  return NextResponse.json({ ok: true, applications: users.map(serializeApplication) });
 }

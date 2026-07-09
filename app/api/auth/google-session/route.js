@@ -3,15 +3,11 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { dbConnect } from "@/lib/db";
 import { User } from "@/models/User";
-import { signToken } from "@/lib/auth";
-
-const PUBLIC_ROLES = ["visitor", "blog_writer"];
+import { signToken, normalizeRole } from "@/lib/auth";
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const action = searchParams.get("action"); // "signup" | "login"
-  const requestedRole = searchParams.get("role");
-  const role = PUBLIC_ROLES.includes(requestedRole) ? requestedRole : "visitor";
 
   const session = await getServerSession(authOptions);
 
@@ -28,18 +24,20 @@ export async function GET(req) {
   // ── SIGNUP FLOW ──
   if (action === "signup") {
     if (user) {
-      // Account already exists — block and redirect back
       return NextResponse.redirect(
         new URL("/register?error=google_exists", req.url)
       );
     }
 
+    // Every Google signup starts as "visitor" — role can never be
+    // self-selected via query param. Becoming a blog_writer requires
+    // going through the writer-application + admin-approval flow.
     const newUser = await User.create({
       name: session.user.name || "Google User",
       email,
       passwordHash: "",
       provider: "google",
-      role,
+      role: "visitor",
       isVerified: true,
       writerVerification: { status: "none" },
     });
@@ -50,25 +48,25 @@ export async function GET(req) {
   // ── LOGIN FLOW ──
   if (action === "login") {
     if (!user) {
-      // No account found — block and redirect back
       return NextResponse.redirect(
         new URL("/login?error=google_not_found", req.url)
+      );
+    }
+
+    if (user.isBanned) {
+      return NextResponse.redirect(
+        new URL("/login?error=account_disabled", req.url)
       );
     }
 
     return buildTokenResponse(user, req);
   }
 
-  // Fallback — unknown action
   return NextResponse.redirect(new URL("/login?error=google", req.url));
 }
 
 function buildTokenResponse(user, req) {
-  const finalRole = user.isAdmin
-    ? "admin"
-    : ["visitor", "blog_writer", "admin"].includes(user.role)
-      ? user.role
-      : "visitor";
+  const finalRole = normalizeRole(user);
 
   const token = signToken({
     id: user._id,

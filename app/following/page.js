@@ -39,7 +39,13 @@ export default function FollowingPage() {
   }, []);
 
   const unfollow = async (writerId) => {
-    const res = await fetch(`/api/writers/${writerId}/follow`, { method: "DELETE" });
+    // Matches the endpoint FollowWriterButton actually uses --
+    // api/writers/[id]/follow is a separate, unused implementation.
+    const res = await fetch("/api/auth/me/following", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ writerId }),
+    });
     const data = await res.json().catch(() => null);
 
     if (!data?.ok) {

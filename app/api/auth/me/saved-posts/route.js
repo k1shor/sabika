@@ -3,6 +3,14 @@ import mongoose from "mongoose";
 import { dbConnect } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { SavedPost } from "@/models/SavedPost";
+import { Post } from "@/models/Post"; // required so mongoose can resolve
+                                       // the "Post" ref used by populate()
+                                       // below -- without this import,
+                                       // mongoose has no registered Post
+                                       // model in this route's execution
+                                       // context and .populate() throws
+                                       // "Schema hasn't been registered
+                                       // for model \"Post\"".
 
 export async function GET() {
   try {
@@ -33,7 +41,6 @@ export async function POST(req) {
     const { postId } = await req.json().catch(() => ({}));
     if (!postId) return NextResponse.json({ ok: false, error: "postId required" }, { status: 400 });
 
-    // ✅ validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(postId)) {
       return NextResponse.json({ ok: false, error: "Invalid post ID" }, { status: 400 });
     }
@@ -61,7 +68,6 @@ export async function DELETE(req) {
     const { postId } = await req.json().catch(() => ({}));
     if (!postId) return NextResponse.json({ ok: false, error: "postId required" }, { status: 400 });
 
-    // ✅ validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(postId)) {
       return NextResponse.json({ ok: false, error: "Invalid post ID" }, { status: 400 });
     }

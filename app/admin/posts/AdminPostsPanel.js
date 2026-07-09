@@ -474,12 +474,16 @@ function CommunityPosts() {
                       </button>
                     )}
                     {post.status !== "rejected" && (
-                      <button type="button" disabled={isBusy}
-                        onClick={() => updatePost(post._id, { status: "rejected" })}
-                        className="rounded-xl border border-yellow-200 bg-yellow-50 px-3 py-1.5 text-xs font-bold text-yellow-700 hover:bg-yellow-100 disabled:opacity-60">
-                        Reject
-                      </button>
-                    )}
+  <button type="button" disabled={isBusy}
+    onClick={() => {
+      const reason = window.prompt("Reason for rejecting this post (shown to the writer):", "");
+      if (reason === null) return; // cancelled
+      updatePost(post._id, { status: "rejected", rejectionReason: reason.trim() });
+    }}
+    className="rounded-xl border border-yellow-200 bg-yellow-50 px-3 py-1.5 text-xs font-bold text-yellow-700 hover:bg-yellow-100 disabled:opacity-60">
+    Reject
+  </button>
+)}
                     <button type="button" disabled={isBusy}
                       onClick={() => updatePost(post._id, { isFlagged: !post.isFlagged })}
                       className={`rounded-xl border px-3 py-1.5 text-xs font-bold transition disabled:opacity-60 ${

@@ -1,33 +1,18 @@
-/**
- * POST /api/auth/register
- *
- * Handles user registration with:
- * - Field-specific Zod validation
- * - Strong password enforcement
- * - bcrypt password hashing
- * - Email verification via sendEmail (Mailtrap/Gmail)
- * - Google OAuth readiness (isVerified: true for OAuth users)
- * - Structured success/error responses
- */
-
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { dbConnect, isDbEnabled } from "@/lib/db";
 import { User } from "@/models/User";
-import { sendEmail } from "@/helpers/mailer";
+import { generateRawToken, hashToken, tokenExpiry } from "@/lib/tokens";
+import { sendVerificationEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// ─── 1. Validation Schema ─────────────────────────────────────────────────────
-// Zod enforces field-level rules. Each field has its own error message
-// so the frontend can show exactly what's wrong per field.
-
 const RegisterSchema = z.object({
   name: z
     .string()
-    .min(2,   { message: "Name must be at least 2 characters." })
+    .min(2, { message: "Name must be at least 2 characters." })
     .max(100, { message: "Name must be under 100 characters." })
     .trim()
     .refine((val) => val.trim().split(/\s+/).length >= 2, {
@@ -41,7 +26,7 @@ const RegisterSchema = z.object({
 
   password: z
     .string()
-    .min(8,   { message: "Password must be at least 8 characters." })
+    .min(8, { message: "Password must be at least 8 characters." })
     .max(200, { message: "Password is too long." })
     .refine((val) => /[A-Z]/.test(val), {
       message: "Password must include at least one uppercase letter.",
@@ -55,15 +40,7 @@ const RegisterSchema = z.object({
     .refine((val) => /[^A-Za-z0-9]/.test(val), {
       message: "Password must include at least one special character (e.g. @, #, !).",
     }),
-
-  // Optional — set to true when registering via Google OAuth
-  isOAuth: z.boolean().optional().default(false),
-  role: z.enum(["visitor", "blog_writer"]).default("visitor"),
-
 });
-// ─── 2. Format Zod errors into field-specific object ─────────────────────────
-// Turns Zod's flat error array into { name: "...", email: "...", password: "..." }
-// so the frontend can map errors directly to each input field.
 
 function formatZodErrors(error) {
   const fields = {};
@@ -76,13 +53,7 @@ function formatZodErrors(error) {
   return fields;
 }
 
-// ─── 3. Main POST handler ─────────────────────────────────────────────────────
-
 export async function POST(req) {
-
-  // ── 3a. Parse request body ──────────────────────────────────────────────────
-  // If body is malformed JSON, catch returns null and we return 400.
-
   const body = await req.json().catch(() => null);
 
   if (!body) {
@@ -92,30 +63,22 @@ export async function POST(req) {
     );
   }
 
-  // ── 3b. Validate with Zod ───────────────────────────────────────────────────
-  // safeParse never throws — it returns { success, data } or { success, error }.
-  // On failure we return structured field errors with 400.
-
   const parsed = RegisterSchema.safeParse(body);
 
   if (!parsed.success) {
     const fieldErrors = formatZodErrors(parsed.error);
     return NextResponse.json(
       {
-        ok:     false,
-        error:  "Invalid input. Please fix the errors below.",
-        fields: fieldErrors, // e.g. { email: "...", password: "..." }
+        ok: false,
+        error: "Invalid input. Please fix the errors below.",
+        fields: fieldErrors,
       },
       { status: 400 }
     );
   }
 
-  const { name, email, password, isOAuth,role } = parsed.data;
+  const { name, email, password } = parsed.data;
   const normalizedEmail = email.trim().toLowerCase();
-
-  // ── 3c. Database check ──────────────────────────────────────────────────────
-  // Abort early if DB is disabled (demo mode).
-  // Then connect and check for existing user before doing anything else.
 
   if (!isDbEnabled()) {
     return NextResponse.json(
@@ -134,10 +97,6 @@ export async function POST(req) {
     );
   }
 
-  // ── 3d. Check for existing account ─────────────────────────────────────────
-  // 409 Conflict if email already registered.
-  // For Google OAuth: if user exists, just return their info (no error).
-
   const existingUser = await User.findOne({ email: normalizedEmail });
 
   if (existingUser) {
@@ -147,51 +106,28 @@ export async function POST(req) {
         { status: 403 }
       );
     }
-    // Google OAuth — user already exists, return their account
-    if (isOAuth) {
-      return NextResponse.json({
-        ok:   true,
-        user: {
-          id:         String(existingUser._id),
-          name:       existingUser.name,
-          email:      existingUser.email,
-          role:       existingUser.role,
-          isVerified: existingUser.isVerified,
-        },
-      });
-    }
 
-    // Normal registration — email taken
     return NextResponse.json(
       {
-        ok:     false,
-        error:  "An account with this email already exists.",
+        ok: false,
+        error: "An account with this email already exists.",
         fields: { email: "This email is already registered." },
       },
       { status: 409 }
     );
   }
 
-  // ── 3e. Hash password ───────────────────────────────────────────────────────
-  // bcrypt with salt rounds of 12. Higher = more secure but slower.
-  // Never store plain text passwords.
-  // OAuth users don't have a password — store empty string.
-
-  const passwordHash = isOAuth ? "" : await bcrypt.hash(password, 12);
-
-  // ── 3f. Create user ─────────────────────────────────────────────────────────
-  // OAuth users are pre-verified (Google already verified their email).
-  // Normal users start unverified until they click the email link.
+  const passwordHash = await bcrypt.hash(password, 12);
 
   let newUser;
   try {
     newUser = await User.create({
       name,
-      email:normalizedEmail,
+      email: normalizedEmail,
       passwordHash,
-      role,
-      provider: isOAuth ? "google" : "credentials",
-      isVerified: isOAuth ? true : false,
+      role: "visitor",
+      provider: "credentials",
+      isVerified: false,
       writerVerification: { status: "none" },
     });
   } catch (err) {
@@ -202,35 +138,28 @@ export async function POST(req) {
     );
   }
 
-  // ── 3g. Send verification email ─────────────────────────────────────────────
-  // Only for normal (non-OAuth) registrations.
-  // sendEmail handles token generation + DB update + Mailtrap/Gmail sending.
-  // If email fails, we still return success — user can request resend later.
+  // ── Send verification email ─────────────────────────────────────────────
+  // Generate + hash the token, save it on the user, then send the raw
+  // token as a link. If the email fails to send, registration still
+  // succeeds — the user can request a resend from /verifyEmail.
 
-  if (!isOAuth) {
-    try {
-      await sendEmail({
-        email:     newUser.email,
-        emailType: "VERIFY",
-        userId:    newUser._id,
-      });
-    } catch (err) {
-      console.error("Verification email failed:", err.message, err.stack);
-      // Don't block registration — user can resend from /verifyEmail page
-    }
+  try {
+    const rawToken = generateRawToken();
+    newUser.verifyToken = hashToken(rawToken);
+    newUser.verifyTokenExpiry = tokenExpiry();
+    await newUser.save();
+
+    const verifyUrl = `${process.env.DOMAIN}/verifyEmail?token=${rawToken}&email=${encodeURIComponent(newUser.email)}`;
+    await sendVerificationEmail({ to: newUser.email, verifyUrl });
+  } catch (err) {
+    console.error("Verification email failed:", err.message, err.stack);
   }
-
-  // ── 3h. Return success ──────────────────────────────────────────────────────
-  // `highlight` is a short punchy message for the frontend to show prominently.
-  // `message` is the longer instructional text.
 
   return NextResponse.json(
     {
-      ok:        true,
+      ok: true,
       highlight: "Account created successfully!",
-      message:   isOAuth
-        ? "Signed up with Google. Welcome to Nursing Nepal!"
-        : "Account created. Please check your email to verify your account before logging in.",
+      message: "Account created. Please check your email to verify your account before logging in.",
     },
     { status: 201 }
   );

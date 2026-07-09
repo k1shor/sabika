@@ -8,7 +8,7 @@ import { IDENTITY_OPTIONS } from "@/components/home/homeData";
 
 export default function VerifiedIdentity() {
   return (
-    <section className="py-20 bg-linear-to-b from-blue-50/40 to-slate-50/30">
+    <section className="py-20 bg-linear-to-b from-blue-50/40 to-slate-50/30 dark:from-blue-950/20 dark:to-slate-950/40">
       <Container>
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -16,10 +16,10 @@ export default function VerifiedIdentity() {
           viewport={{ once: true }}
           className="text-center mb-14"
         >
-          <h2 className="text-4xl font-extrabold text-slate-900 tracking-tight">
-            Verified identity, <span className="text-red-600">your choice</span> of voice
+          <h2 className="text-4xl font-extrabold text-slate-900 tracking-tight dark:text-white">
+            Verified identity, <span className="text-red-600 dark:text-red-400">your choice</span> of voice
           </h2>
-          <p className="mt-3 text-slate-500 max-w-lg mx-auto">
+          <p className="mt-3 text-slate-500 max-w-lg mx-auto dark:text-blue-100/60">
             All contributors are verified — but you decide how you appear on each post.
           </p>
         </motion.div>

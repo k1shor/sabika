@@ -8,8 +8,14 @@ import { User } from "@/models/User";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const RoleUpdateSchema = z.object({
-  role: z.enum(["visitor", "blog_writer", "admin"]),
+// role and isBanned can each be sent independently (the users panel
+// sends only one or the other per action) -- both optional, but at
+// least one must be present.
+const UserUpdateSchema = z.object({
+  role: z.enum(["visitor", "blog_writer", "admin"]).optional(),
+  isBanned: z.boolean().optional(),
+}).refine((data) => data.role !== undefined || data.isBanned !== undefined, {
+  message: "Nothing to update",
 });
 
 function serializeUser(user) {
@@ -18,6 +24,7 @@ function serializeUser(user) {
     name: user.name || "",
     email: user.email || "",
     role: user.role || "visitor",
+    isBanned: Boolean(user.isBanned),
     createdAt: user.createdAt instanceof Date ? user.createdAt.toISOString() : user.createdAt,
     updatedAt: user.updatedAt instanceof Date ? user.updatedAt.toISOString() : user.updatedAt,
   };
@@ -31,36 +38,42 @@ export async function PATCH(req, { params }) {
     return NextResponse.json({ ok: false, error: "Database is disabled. Enable USE_DB=true" }, { status: 400 });
   }
 
-  const id = params?.id;
+  const { id } = await params;
   if (!id) return NextResponse.json({ ok: false, error: "Missing id" }, { status: 400 });
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return NextResponse.json({ ok: false, error: "Invalid id" }, { status: 400 });
   }
 
   const body = await req.json().catch(() => null);
-  const parsed = RoleUpdateSchema.safeParse(body);
+  const parsed = UserUpdateSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ ok: false, error: "Invalid input" }, { status: 400 });
 
   await dbConnect();
 
   const currentUserId = auth.user?.id ? String(auth.user.id) : "";
-  const role = parsed.data.role;
 
-  if (id === currentUserId && role !== "admin") {
-    return NextResponse.json({ ok: false, error: "You cannot demote your own account" }, { status: 400 });
+  if (id === currentUserId) {
+    return NextResponse.json({ ok: false, error: "You cannot modify your own account here" }, { status: 400 });
   }
 
   const user = await User.findById(id);
   if (!user) return NextResponse.json({ ok: false, error: "User not found" }, { status: 404 });
 
-  if (user.role === "admin" && role !== "admin") {
-    const adminCount = await User.countDocuments({ role: "admin" });
-    if (adminCount <= 1) {
-      return NextResponse.json({ ok: false, error: "At least one admin account is required" }, { status: 400 });
+  if (parsed.data.role !== undefined) {
+    if (user.role === "admin" && parsed.data.role !== "admin") {
+      const adminCount = await User.countDocuments({ role: "admin" });
+      if (adminCount <= 1) {
+        return NextResponse.json({ ok: false, error: "At least one admin account is required" }, { status: 400 });
+      }
     }
+    user.role = parsed.data.role;
   }
 
-  user.role = role;
+  if (parsed.data.isBanned !== undefined) {
+    user.isBanned = parsed.data.isBanned;
+    user.bannedAt = parsed.data.isBanned ? new Date() : undefined;
+  }
+
   await user.save();
 
   return NextResponse.json({ ok: true, user: serializeUser(user) });

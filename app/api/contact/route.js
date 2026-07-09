@@ -6,12 +6,14 @@ import { ContactMessage } from "@/models/ContactMessage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
 function escapeHtml(value) {
   return String(value || "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 }
+
 function getTransportConfig() {
   if (process.env.MAILTRAP_HOST && process.env.MAILTRAP_USER && process.env.MAILTRAP_PASS) {
     return {
@@ -56,7 +58,7 @@ async function sendContactEmail({ name, email, subject, message }) {
       subject: subject
         ? `[Nursing Nepal] ${subject}`
         : `New contact message from ${name}`,
-      text: `Name: ${name}\nEmail: ${email}${subject ? `\nSubject: ${subject}` : ""}\n\n${message}`,
+      text: `Name: ${name}\\nEmail: ${email}${subject ? `\\nSubject: ${subject}` : ""}\\n\\n${message}`,
       html: `
   <h2>New contact message</h2>
   <p><strong>Name:</strong> ${escapeHtml(name)}</p>
@@ -73,39 +75,46 @@ async function sendContactEmail({ name, email, subject, message }) {
 }
 
 export async function POST(req) {
-  const body = await req.json().catch(() => null);
-  const parsed = ContactSchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ ok: false, error: "Invalid data" }, { status: 400 });
+  try {
+    const body = await req.json().catch(() => null);
+    const parsed = ContactSchema.safeParse(body);
+    if (!parsed.success) return NextResponse.json({ ok: false, error: "Invalid data" }, { status: 400 });
 
-  if (!isDbEnabled()) {
+    if (!isDbEnabled()) {
+      return NextResponse.json(
+        { ok: false, error: "Contact messages require database. Set USE_DB=true." },
+        { status: 503 }
+      );
+    }
+
+    await dbConnect();
+
+    const payload = {
+      name: parsed.data.name.trim(),
+      email: parsed.data.email.trim().toLowerCase(),
+      subject: parsed.data.subject?.trim() || "",
+      message: parsed.data.message.trim(),
+    };
+
+    const emailResult = await sendContactEmail(payload);
+
+    const saved = await ContactMessage.create({
+      ...payload,
+      emailSent: emailResult.sent,
+      emailError: emailResult.error,
+    });
+
+    return NextResponse.json({
+      ok: true,
+      message: "Thank you! Your message has been received. We will get back to you soon.",
+      emailSent: emailResult.sent,
+      id: String(saved._id),
+    });
+  } catch (err) {
+    console.error("POST /api/contact:", err);
     return NextResponse.json(
-      { ok: false, error: "Contact messages require database. Set USE_DB=true." },
-      { status: 503 }
+      { ok: false, error: "Failed to submit your message. Please try again." },
+      { status: 500 }
     );
   }
-
-  await dbConnect();
-
-  const payload = {
-    name: parsed.data.name.trim(),
-    email: parsed.data.email.trim().toLowerCase(),
-    subject: parsed.data.subject?.trim() || "",
-    message: parsed.data.message.trim(),
-  };
-
-  const emailResult = await sendContactEmail(payload);
-
-  const saved = await ContactMessage.create({
-    ...payload,
-    emailSent: emailResult.sent,
-    emailError: emailResult.error,
-  });
-
-  return NextResponse.json({
-    ok: true,
-    // ✅ don't mention email at all — user doesn't need to know
-    message: "Thank you! Your message has been received. We will get back to you soon.",
-    emailSent: emailResult.sent,
-    id: String(saved._id),
-  });
 }

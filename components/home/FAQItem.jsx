@@ -24,17 +24,17 @@ export default function FAQItem({ q, a, index = 0 }) {
       whileInView={{ opacity: 1, x: 0 }}
       viewport={{ once: true }}
       transition={{ delay: index * 0.08 }}
-      className="border-b border-slate-200 last:border-0"
+      className="border-b border-slate-200 last:border-0 dark:border-blue-400/15"
     >
       <button
-        className="flex w-full items-center justify-between py-4 text-left text-sm font-semibold text-slate-700 hover:text-blue-700 transition-colors"
+        className="flex w-full items-center justify-between py-4 text-left text-sm font-semibold text-slate-700 hover:text-blue-700 transition-colors dark:text-blue-100/80 dark:hover:text-blue-300"
         onClick={() => setOpen(!open)}
       >
         {q}
         <motion.span
           animate={{ rotate: open ? 45 : 0 }}
           transition={{ duration: 0.2 }}
-          className="ml-4 shrink-0 text-blue-600 text-lg font-light"
+          className="ml-4 shrink-0 text-blue-600 text-lg font-light dark:text-blue-400"
         >
           +
         </motion.span>
@@ -49,7 +49,7 @@ export default function FAQItem({ q, a, index = 0 }) {
             transition={{ duration: 0.28 }}
             className="overflow-hidden"
           >
-            <p className="pb-4 text-sm text-slate-500 leading-relaxed">{a}</p>
+            <p className="pb-4 text-sm text-slate-500 leading-relaxed dark:text-blue-100/60">{a}</p>
           </motion.div>
         )}
       </AnimatePresence>

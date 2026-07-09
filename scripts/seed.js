@@ -179,6 +179,7 @@ async function seedPosts(adminId) {
     const slug        = slugify(p.slug || p.title);
     const contentHtml = makeHtml({ intro: p.intro, bullets: p.bullets, warning: p.warning });
     const readTime    = estimateReadTime(contentHtml);
+    const isAnonymous = p.isAnonymous || false;
 
     await Post.findOneAndUpdate(
       { slug },
@@ -192,7 +193,12 @@ async function seedPosts(adminId) {
 
         // ✅ required fields matching current Post model
         authorId:    adminId,
-        isAnonymous: p.isAnonymous || false,
+        isAnonymous: isAnonymous,
+        // Admin-authored seed posts display as "Nursing Nepal" — except
+        // the anonymous one, which stays anonymous instead (the two are
+        // mutually exclusive: one hides identity, the other replaces it
+        // with the brand name).
+        isOfficialPost: !isAnonymous,
         category:    p.category,
         postType:    p.postType  || "normal",
         flair:       p.flair     || "",

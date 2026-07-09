@@ -65,7 +65,7 @@ if (auth.user.role !== "admin" &&
     (auth.user.role !== "blog_writer" || auth.user.writerVerification?.status !== "approved")) {
   return NextResponse.json({ ok: false, error: "Writer approval required" }, { status: 403 });
 }
-  if (!auth.ok) return NextResponse.json({ ok: false, error: auth.error || "Forbidden" }, { status: 403 });
+  // if (!auth.ok) return NextResponse.json({ ok: false, error: auth.error || "Forbidden" }, { status: 403 });
 
   const form = await req.formData().catch(() => null);
   if (!form) return NextResponse.json({ ok: false, error: "Invalid form data" }, { status: 400 });

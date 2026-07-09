@@ -21,68 +21,70 @@ const PasswordChangeSchema = z.object({
 });
 
 export async function PATCH(req) {
-  const auth = await requireUser();
-  if (!auth.ok) {
-    return NextResponse.json({ ok: false, error: "Login required" }, { status: 401 });
-  }
-
-  const body = await req.json().catch(() => null);
-  if (!body) {
-    return NextResponse.json({ ok: false, error: "Invalid request body" }, { status: 400 });
-  }
-
-  const parsed = PasswordChangeSchema.safeParse(body);
-  if (!parsed.success) {
-    const fields = {};
-    for (const issue of parsed.error.issues) {
-      const field = issue.path[0];
-      if (field && !fields[field]) fields[field] = issue.message;
+  try {
+    const auth = await requireUser();
+    if (!auth.ok) {
+      return NextResponse.json({ ok: false, error: "Login required" }, { status: 401 });
     }
-    return NextResponse.json({ ok: false, error: "Invalid input", fields }, { status: 400 });
+
+    const body = await req.json().catch(() => null);
+    if (!body) {
+      return NextResponse.json({ ok: false, error: "Invalid request body" }, { status: 400 });
+    }
+
+    const parsed = PasswordChangeSchema.safeParse(body);
+    if (!parsed.success) {
+      const fields = {};
+      for (const issue of parsed.error.issues) {
+        const field = issue.path[0];
+        if (field && !fields[field]) fields[field] = issue.message;
+      }
+      return NextResponse.json({ ok: false, error: "Invalid input", fields }, { status: 400 });
+    }
+
+    if (!isDbEnabled()) {
+      return NextResponse.json({ ok: false, error: "Service unavailable." }, { status: 503 });
+    }
+
+    await dbConnect();
+
+    const user = await User.findById(auth.user.id);
+    if (!user) {
+      return NextResponse.json({ ok: false, error: "User not found" }, { status: 404 });
+    }
+
+    if (user.provider === "google") {
+      return NextResponse.json(
+        { ok: false, error: "Google accounts cannot change password here." },
+        { status: 400 }
+      );
+    }
+
+    const isMatch = await bcrypt.compare(parsed.data.currentPassword, user.passwordHash || "");
+    if (!isMatch) {
+      return NextResponse.json(
+        { ok: false, error: "Current password is incorrect.", fields: { currentPassword: "Incorrect password." } },
+        { status: 401 }
+      );
+    }
+
+    const isSame = await bcrypt.compare(parsed.data.newPassword, user.passwordHash || "");
+    if (isSame) {
+      return NextResponse.json(
+        { ok: false, error: "New password must be different from current password." },
+        { status: 400 }
+      );
+    }
+
+    user.passwordHash = await bcrypt.hash(parsed.data.newPassword, 12);
+    await user.save();
+
+    return NextResponse.json({
+      ok: true,
+      message: "Password updated successfully.",
+    });
+  } catch (err) {
+    console.error("PATCH /api/profile/password:", err);
+    return NextResponse.json({ ok: false, error: "Server error" }, { status: 500 });
   }
-
-  if (!isDbEnabled()) {
-    return NextResponse.json({ ok: false, error: "Service unavailable." }, { status: 503 });
-  }
-
-  await dbConnect();
-
-  const user = await User.findById(auth.user.id);
-  if (!user) {
-    return NextResponse.json({ ok: false, error: "User not found" }, { status: 404 });
-  }
-
-  // Google OAuth users have no password
-  if (user.provider === "google") {
-    return NextResponse.json(
-      { ok: false, error: "Google accounts cannot change password here." },
-      { status: 400 }
-    );
-  }
-
-  // verify current password
-  const isMatch = await bcrypt.compare(parsed.data.currentPassword, user.passwordHash || "");
-  if (!isMatch) {
-    return NextResponse.json(
-      { ok: false, error: "Current password is incorrect.", fields: { currentPassword: "Incorrect password." } },
-      { status: 401 }
-    );
-  }
-
-  // prevent reusing same password
-  const isSame = await bcrypt.compare(parsed.data.newPassword, user.passwordHash || "");
-  if (isSame) {
-    return NextResponse.json(
-      { ok: false, error: "New password must be different from current password." },
-      { status: 400 }
-    );
-  }
-
-  user.passwordHash = await bcrypt.hash(parsed.data.newPassword, 12);
-  await user.save();
-
-  return NextResponse.json({
-    ok: true,
-    message: "Password updated successfully.",
-  });
 }

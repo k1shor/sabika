@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { dbConnect, isDbEnabled } from "@/lib/db";
 import { User } from "@/models/User";
-import { sendEmail } from "@/helpers/mailer";
+import { generateRawToken, hashToken, tokenExpiry } from "@/lib/tokens";
+import { sendPasswordResetEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -44,11 +45,13 @@ export async function POST(req) {
   }
 
   try {
-    await sendEmail({
-      email: user.email,
-      emailType: "RESET",
-      userId: user._id,
-    });
+    const rawToken = generateRawToken();
+    user.passwordResetTokenHash = hashToken(rawToken);
+    user.passwordResetExpiresAt = tokenExpiry();
+    await user.save();
+
+    const resetUrl = `${process.env.DOMAIN}/reset-password/${rawToken}`;
+    await sendPasswordResetEmail({ to: user.email, resetUrl });
   } catch {
     return NextResponse.json(
       { ok: false, error: "Password reset email could not be sent" },

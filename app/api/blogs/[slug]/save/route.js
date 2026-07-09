@@ -1,47 +1,54 @@
-import { NextResponse } from "next/server";
-import { dbConnect } from "@/lib/db";
-import { requireUser } from "@/lib/auth";
-import { Post } from "@/models/Post";
-import { SavedPost } from "@/models/SavedPost";
-import { DUMMY_POSTS } from "@/lib/dummy";
+// import { NextResponse } from "next/server";
+// import { dbConnect, isDbEnabled } from "@/lib/db";
+// import { requireUser } from "@/lib/auth";
+// import { Post } from "@/models/Post";
+// import { SavedPost } from "@/models/SavedPost";
 
-export async function POST(_req, { params }) {
-  const auth = await requireUser();
-  if (!auth.ok) return NextResponse.json({ ok: false, error: "Login required" }, { status: 401 });
+// export async function POST(_req, { params }) {
+//   const auth = await requireUser();
+//   if (!auth.ok) return NextResponse.json({ ok: false, error: "Login required" }, { status: 401 });
 
-  const { slug } = await params;
+//   const { slug } = await params;
 
-  await dbConnect();
+//   if (!isDbEnabled()) {
+//     return NextResponse.json({ ok: false, error: "Saving is currently unavailable" }, { status: 503 });
+//   }
 
-  const dbPost = await Post.findOne({ slug }).lean();
-  const dummyPost = DUMMY_POSTS.find((p) => p.slug === slug);
-  const post = dbPost || dummyPost;
+//   await dbConnect();
 
-  if (!post) return NextResponse.json({ ok: false, error: "Post not found" }, { status: 404 });
+//   const dbPost = await Post.findOne({ slug, status: "approved" }, { _id: 1 }).lean();
 
-  await SavedPost.findOneAndUpdate(
-    { userId: auth.user.id, slug },
-    {
-      userId: auth.user.id,
-      postId: dbPost?._id,
-      slug,
-      title: post.title,
-      excerpt: post.excerpt || "",
-    },
-    { upsert: true }
-  );
+//   if (!dbPost) {
+//     return NextResponse.json({ ok: false, error: "Post not found" }, { status: 404 });
+//   }
 
-  return NextResponse.json({ ok: true, message: "Post saved" });
-}
+//   await SavedPost.findOneAndUpdate(
+//     { userId: auth.user.id, postId: dbPost._id },
+//     { userId: auth.user.id, postId: dbPost._id },
+//     { upsert: true }
+//   );
 
-export async function DELETE(_req, { params }) {
-  const auth = await requireUser();
-  if (!auth.ok) return NextResponse.json({ ok: false, error: "Login required" }, { status: 401 });
+//   return NextResponse.json({ ok: true, message: "Post saved" });
+// }
 
-  const { slug } = await params;
+// export async function DELETE(_req, { params }) {
+//   const auth = await requireUser();
+//   if (!auth.ok) return NextResponse.json({ ok: false, error: "Login required" }, { status: 401 });
 
-  await dbConnect();
-  await SavedPost.deleteOne({ userId: auth.user.id, slug });
+//   const { slug } = await params;
 
-  return NextResponse.json({ ok: true, message: "Post removed from saved list" });
-}
+//   if (!isDbEnabled()) {
+//     return NextResponse.json({ ok: false, error: "This action is currently unavailable" }, { status: 503 });
+//   }
+
+//   await dbConnect();
+
+//   const dbPost = await Post.findOne({ slug }, { _id: 1 }).lean();
+//   if (!dbPost) {
+//     return NextResponse.json({ ok: true, message: "Post removed from saved list" });
+//   }
+
+//   await SavedPost.deleteOne({ userId: auth.user.id, postId: dbPost._id });
+
+//   return NextResponse.json({ ok: true, message: "Post removed from saved list" });
+// }

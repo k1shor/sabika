@@ -27,6 +27,7 @@ const ResetPasswordSchema = z.object({
       message: "Password must include at least one special character.",
     }),
 });
+
 function hashToken(token) {
   return crypto
     .createHash("sha256")
@@ -60,12 +61,7 @@ export async function POST(req) {
     passwordResetTokenHash: tokenHash,
     passwordResetExpiresAt: { $gt: new Date() },
   });
-  if (user.isBanned) {
-    return NextResponse.json(
-      { ok: false, error: "This account has been suspended." },
-      { status: 403 }
-    );
-  }
+
   if (!user) {
     return NextResponse.json(
       { ok: false, error: "Invalid or expired reset link" },
@@ -73,6 +69,12 @@ export async function POST(req) {
     );
   }
 
+  if (user.isBanned) {
+    return NextResponse.json(
+      { ok: false, error: "This account has been suspended." },
+      { status: 403 }
+    );
+  }
 
   if (user.provider === "google") {
     return NextResponse.json(
@@ -84,9 +86,10 @@ export async function POST(req) {
   user.passwordHash = await bcrypt.hash(parsed.data.password, 12);
   user.passwordResetTokenHash = undefined;
   user.passwordResetExpiresAt = undefined;
-  user.forgotPasswordToken = undefined;        
+  user.forgotPasswordToken = undefined;
   user.forgotPasswordTokenExpiry = undefined;
   await user.save();
+
   return NextResponse.json({
     ok: true,
     message: "Password updated. You can now log in.",

@@ -47,7 +47,7 @@ const FEATURES = [
 export default function FeaturesSection() {
   return (
     <section className="py-20 relative overflow-hidden">
-      <div className="pointer-events-none absolute inset-0 -z-10 bg-linear-to-b from-slate-50/50 to-white" />
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-linear-to-b from-slate-50/50 to-white dark:from-slate-950/50 dark:to-slate-950" />
 
       <Container>
         <motion.div
@@ -56,13 +56,13 @@ export default function FeaturesSection() {
           viewport={{ once: true }}
           className="text-center mb-14"
         >
-          <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-500 mb-4">
+          <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-500 mb-4 dark:border-blue-400/20 dark:bg-blue-950/40 dark:text-blue-100/70">
             <span className="h-1.5 w-1.5 rounded-full bg-blue-600" /> What we offer
           </div>
-          <h2 className="text-4xl font-extrabold text-slate-900 tracking-tight">
-            More than a <span className="text-blue-700">blog</span>
+          <h2 className="text-4xl font-extrabold text-slate-900 tracking-tight dark:text-white">
+            More than a <span className="text-blue-700 dark:text-blue-400">blog</span>
           </h2>
-          <p className="mt-3 text-slate-500 max-w-lg mx-auto">
+          <p className="mt-3 text-slate-500 max-w-lg mx-auto dark:text-blue-100/60">
             Nursing Nepal combines real-world storytelling, verified expertise, and
             privacy-controlled publishing in one place.
           </p>

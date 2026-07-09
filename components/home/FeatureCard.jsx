@@ -22,7 +22,7 @@ export default function FeatureCard({ icon, title, desc, color, index = 0 }) {
       margin="-60px"
       transition={{ duration: 0.55, delay: index * 0.1, ease: [0.22, 1, 0.36, 1] }}
       whileHover={{ y: -6, boxShadow: "0 20px 40px -12px rgba(0,0,0,0.12)" }}
-      className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white/80 p-6 backdrop-blur-sm cursor-default"
+      className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white/80 p-6 backdrop-blur-sm cursor-default dark:border-blue-400/20 dark:bg-blue-950/25"
     >
       <div className="relative z-10">
         <div
@@ -31,8 +31,8 @@ export default function FeatureCard({ icon, title, desc, color, index = 0 }) {
         >
           {icon}
         </div>
-        <h3 className="mt-4 font-bold text-slate-800 text-[15px] leading-snug">{title}</h3>
-        <p className="mt-1.5 text-sm text-slate-500 leading-relaxed">{desc}</p>
+        <h3 className="mt-4 font-bold text-slate-800 text-[15px] leading-snug dark:text-white">{title}</h3>
+        <p className="mt-1.5 text-sm text-slate-500 leading-relaxed dark:text-blue-100/60">{desc}</p>
       </div>
 
       {/* Animated bottom accent bar on hover */}

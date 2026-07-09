@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import WriterRequestsTable from "./WriterRequestsTable";
 
 function StatCard({ label, value, tone }) {
   const toneClass = {
@@ -116,6 +117,7 @@ export default function AdminDashboardTabs({
   postsPerDay,
   usersPerWeek,
   activity,
+  writerRequests,
   user,
 }) {
   return (
@@ -140,7 +142,6 @@ export default function AdminDashboardTabs({
       <main className="mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-6">
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">Admin Dashboard</h1>
-          
         </div>
 
         <section className="grid grid-cols-2 gap-3 lg:grid-cols-5">
@@ -164,6 +165,12 @@ export default function AdminDashboardTabs({
             <p className="mb-4 text-sm font-extrabold text-slate-800 dark:text-white">Recent Activity</p>
             <ActivityFeed items={activity} />
           </div>
+        </section>
+
+        {/* Live pending-writer queue, right on the dashboard -- was
+            computed by the page but never rendered anywhere before. */}
+        <section>
+          <WriterRequestsTable initialWriters={writerRequests || []} />
         </section>
 
         <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">

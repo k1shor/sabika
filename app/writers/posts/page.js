@@ -49,7 +49,6 @@ export default function WriterPostsPage() {
   const [error,         setError]         = useState(null);
   const [followerCount, setFollowerCount] = useState(0);
   const [fieldErrors,   setFieldErrors]   = useState({});
-  const [submitStatus,  setSubmitStatus]  = useState("pending");
 
   // all form fields in one object — PostFormFields reads from here
   const [fields, setFieldsRaw] = useState(EMPTY_FIELDS);
@@ -124,6 +123,14 @@ export default function WriterPostsPage() {
     setMessage(null);
     setError(null);
 
+    // Read which button was actually clicked directly off the submit
+    // event instead of relying on state set in a separate onClick — a
+    // separate onClick + state can be one click behind due to React's
+    // batching, since the submit handler can fire using the previous
+    // render's closure before the click's setState has been applied.
+    const submitter = e.nativeEvent.submitter;
+    const saveAsDraft = submitter?.name === "saveAsDraft";
+
     const form     = new FormData(e.currentTarget);
     const title    = String(form.get("title")    || "").trim();
     const excerpt  = String(form.get("excerpt")  || "").trim();
@@ -162,7 +169,7 @@ export default function WriterPostsPage() {
       tags,
       isAnonymous: fields.isAnonymous,
       readTime:    readTime || "5 min read",
-      status:      submitStatus,
+      saveAsDraft,
       images:      [],
     };
 
@@ -184,11 +191,7 @@ export default function WriterPostsPage() {
 
       e.target.reset();
       setFieldsRaw(EMPTY_FIELDS);
-      setMessage(
-        submitStatus === "draft"
-          ? "Post saved as draft!"
-          : "Post submitted! It will be published shortly."
-      );
+      setMessage(data.message || (saveAsDraft ? "Post saved as draft!" : "Post submitted! It will be published shortly."));
       await loadPosts();
     } catch {
       setError("Something went wrong. Try again.");
@@ -281,23 +284,24 @@ export default function WriterPostsPage() {
                 onUploadCover={handleUploadCover}
                 onUploadInlineImage={handleUploadInlineImage}
               >
-                {/* Action buttons */}
+                {/* Action buttons — `name` identifies which one was
+                    clicked via e.nativeEvent.submitter in createPost */}
                 <div className="flex flex-col gap-2 xs:flex-row sm:flex-row">
                   <button
                     type="submit"
+                    name="saveAsDraft"
                     disabled={busy}
-                    onClick={() => setSubmitStatus("draft")}
                     className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60 dark:border-blue-400/20 dark:bg-blue-950/20 dark:text-blue-100 sm:py-2.5"
                   >
-                    {busy && submitStatus === "draft" ? "Saving..." : "Save as Draft"}
+                    {busy ? "Saving..." : "Save as Draft"}
                   </button>
                   <button
                     type="submit"
+                    name="publish"
                     disabled={busy}
-                    onClick={() => setSubmitStatus("pending")}
                     className="flex-1 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-60 sm:py-2.5"
                   >
-                    {busy && submitStatus === "pending" ? "Publishing..." : "Publish Post"}
+                    {busy ? "Publishing..." : "Publish Post"}
                   </button>
                 </div>
               </PostFormFields>

@@ -23,9 +23,9 @@ function Particle({ x, y, size, delay, duration, color }) {
 function HeroBackground() {
   return (
     <div className="pointer-events-none absolute inset-0 -z-10">
-      <div className="absolute inset-0 bg-linear-to-br from-slate-50 via-blue-50/40 to-red-50/30" />
-      <div className="absolute top-0 right-0 h-150 w-150 rounded-full bg-blue-100/50 blur-3xl" />
-      <div className="absolute bottom-0 left-0 h-125 w-125 rounded-full bg-red-100/40 blur-3xl" />
+      <div className="absolute inset-0 bg-linear-to-br from-slate-50 via-blue-50/40 to-red-50/30 dark:from-slate-950 dark:via-blue-950/30 dark:to-red-950/10" />
+      <div className="absolute top-0 right-0 h-150 w-150 rounded-full bg-blue-100/50 blur-3xl dark:bg-blue-500/10" />
+      <div className="absolute bottom-0 left-0 h-125 w-125 rounded-full bg-red-100/40 blur-3xl dark:bg-red-500/10" />
       {HERO_PARTICLES.map((particle) => (
         <Particle key={particle.id} {...particle} />
       ))}
@@ -40,7 +40,7 @@ function HeroIntro() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold text-slate-600 backdrop-blur-sm shadow-sm"
+        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold text-slate-600 backdrop-blur-sm shadow-sm dark:border-blue-400/20 dark:bg-blue-950/40 dark:text-blue-100/80"
       >
         <motion.span
           className="h-2 w-2 rounded-full bg-blue-600"
@@ -54,13 +54,13 @@ function HeroIntro() {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.65, delay: 0.1 }}
-        className="mt-4 text-5xl md:text-6xl font-extrabold tracking-tight leading-[1.1]"
+        className="mt-4 text-5xl md:text-6xl font-extrabold tracking-tight leading-[1.1] text-slate-900 dark:text-white"
       >
         Welcome to{" "}
-        <motion.span className="text-blue-700" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}>
+        <motion.span className="text-blue-700 dark:text-blue-400" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}>
           Nursing
         </motion.span>{" "}
-        <motion.span className="text-red-600" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}>
+        <motion.span className="text-red-600 dark:text-red-400" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}>
           Nepal
         </motion.span>
       </motion.h1>
@@ -69,7 +69,7 @@ function HeroIntro() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.45 }}
-        className="mt-4 text-slate-600 leading-relaxed text-lg max-w-md"
+        className="mt-4 text-slate-600 leading-relaxed text-lg max-w-md dark:text-blue-100/75"
       >
         A community-driven platform where nursing students and professionals share real
         experiences, study guidance, clinical stories, and career journeys — honestly and safely.
@@ -93,7 +93,7 @@ function HeroIntro() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.7 }}
-        className="mt-8 flex flex-wrap gap-4 text-xs text-slate-500"
+        className="mt-8 flex flex-wrap gap-4 text-xs text-slate-500 dark:text-blue-100/50"
       >
         {HERO_TRUST_BADGES.map((badge) => (
           <span key={badge} className="flex items-center gap-1 font-medium">{badge}</span>
@@ -111,13 +111,13 @@ function HeroScrollHint() {
       transition={{ delay: 1.2 }}
       className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1"
     >
-      <span className="text-xs text-slate-400">Scroll to explore</span>
+      <span className="text-xs text-slate-400 dark:text-blue-100/40">Scroll to explore</span>
       <motion.div
         animate={{ y: [0, 6, 0] }}
         transition={{ duration: 1.5, repeat: Infinity }}
-        className="h-5 w-5 rounded-full border-2 border-slate-300 flex items-center justify-center"
+        className="h-5 w-5 rounded-full border-2 border-slate-300 flex items-center justify-center dark:border-blue-400/30"
       >
-        <div className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+        <div className="h-1.5 w-1.5 rounded-full bg-slate-400 dark:bg-blue-300/60" />
       </motion.div>
     </motion.div>
   );

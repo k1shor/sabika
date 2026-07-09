@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getAuthUser } from "@/lib/auth";
-import { dbConnect,isDbEnabled } from "@/lib/db";
+import { dbConnect, isDbEnabled } from "@/lib/db";
 import { User } from "@/models/User";
 import { Notification } from "@/models/Notification";
 
@@ -62,9 +62,16 @@ export async function POST(req) {
       );
     }
 
-    if (authUser.role !== "blog_writer") {
+    // Anyone who isn't already an admin can apply -- most applicants will
+    // be plain "visitor" accounts, since role only becomes "blog_writer"
+    // AFTER an application is approved. Requiring role === "blog_writer"
+    // here made it impossible for anyone to ever apply in the first
+    // place (chicken-and-egg deadlock). A previously-rejected blog_writer
+    // re-applying is also allowed; duplicate pending/approved
+    // applications are still blocked below.
+    if (authUser.role === "admin") {
       return NextResponse.json(
-        { ok: false, error: "Only blog writer accounts can apply for writer approval" },
+        { ok: false, error: "Admin accounts cannot apply as writers." },
         { status: 403 }
       );
     }
