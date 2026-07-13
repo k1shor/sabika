@@ -3,6 +3,7 @@ import BlogsToolbar from "@/components/blogs/BlogsToolbar";
 import { DUMMY_POSTS } from "@/lib/dummy";
 import { dbConnect, isDbEnabled } from "@/lib/db";
 import { Post } from "@/models/Post";
+import { getAuthUser } from "@/lib/auth";
 import AnimatedBlogsHeader from "./AnimatedBlogsHeader";
 
 export const runtime = "nodejs";
@@ -25,7 +26,6 @@ function serializePost(post) {
     isOfficialPost: post.isOfficialPost || false,
     publishedAt: post.publishedAt instanceof Date ? post.publishedAt.toISOString() : post.publishedAt,
     createdAt:   post.createdAt   instanceof Date ? post.createdAt.toISOString()   : post.createdAt,
-    // author info — safe for anonymous or official posts
     authorId: post.isAnonymous || post.isOfficialPost ? null : (post.authorId ? {
       _id:      String(post.authorId._id || post.authorId),
       name:     post.authorId.name     || "",
@@ -40,7 +40,7 @@ async function getPosts() {
   try {
     await dbConnect();
     const posts = await Post.find(
-      { status: "approved" }, // ✅ only approved posts
+      { status: "approved" },
       {
         title: 1, slug: 1, excerpt: 1, coverImage: 1,
         category: 1, postType: 1, tags: 1, readTime: 1,
@@ -48,7 +48,7 @@ async function getPosts() {
         authorId: 1, publishedAt: 1, createdAt: 1,
       }
     )
-      .populate("authorId", "name avatarUrl badge") // ✅ populate author
+      .populate("authorId", "name avatarUrl badge")
       .sort({ publishedAt: -1 })
       .lean();
     return (posts || []).map(serializePost);
@@ -57,24 +57,40 @@ async function getPosts() {
   }
 }
 
-export default async function BlogsPage() {
-  const posts = await getPosts();
+// Guests see official (NursingNepal) posts pinned to the top, each group
+// still sorted newest-first internally. Logged-in users see the normal
+// newest-first order untouched.
+function orderForGuests(posts) {
+  const official = posts.filter((p) => p.isOfficialPost);
+  const rest = posts.filter((p) => !p.isOfficialPost);
+  return [...official, ...rest];
+}
 
-  // build category list from actual posts
+export default async function BlogsPage() {
+  const [posts, authUser] = await Promise.all([getPosts(), getAuthUser()]);
+  const isAuthenticated = Boolean(authUser);
+
+  const visiblePosts = isAuthenticated ? posts : posts.filter((p) => p.isOfficialPost);
+
   const categories = Array.from(
-    new Set(posts.map((p) => p.category).filter(Boolean))
+    new Set(visiblePosts.map((p) => p.category).filter(Boolean))
   ).sort();
 
-  // build tags list from actual posts
   const tags = Array.from(
-    new Set(posts.flatMap((p) => (Array.isArray(p.tags) ? p.tags : [])))
+    new Set(visiblePosts.flatMap((p) => (Array.isArray(p.tags) ? p.tags : [])))
   ).sort((a, b) => a.localeCompare(b));
 
   return (
     <Container>
       <AnimatedBlogsHeader postsCount={posts.length} />
       <div className="mt-6">
-        <BlogsToolbar posts={posts} tags={tags} categories={categories} />
+        <BlogsToolbar
+          posts={visiblePosts}
+          totalCount={posts.length}
+          tags={tags}
+          categories={categories}
+          isAuthenticated={isAuthenticated}
+        />
       </div>
     </Container>
   );

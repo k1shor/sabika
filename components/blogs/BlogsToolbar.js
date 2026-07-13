@@ -1,17 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ArticlesEmptyState from "@/components/blogs/ArticlesEmptyState";
 import ArticlesGrid from "@/components/blogs/ArticlesGrid";
 import BlogsFilters from "@/components/blogs/BlogsFilters";
 import { filterAndSortPosts, getPostTypes } from "@/components/blogs/blogToolbarUtils";
 
-export default function BlogsToolbar({ posts = [], tags = [], categories = [] }) {
+const PAGE_SIZE = 12;
+
+export default function BlogsToolbar({ posts = [], tags = [], categories = [], isAuthenticated = false }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
   const [postType, setPostType] = useState("all");
   const [tag, setTag] = useState("all");
   const [sort, setSort] = useState("latest");
+  const [page, setPage] = useState(1);
 
   const postTypes = useMemo(() => getPostTypes(posts), [posts]);
 
@@ -19,6 +22,17 @@ export default function BlogsToolbar({ posts = [], tags = [], categories = [] })
     () => filterAndSortPosts(posts, { query, category, postType, tag, sort }),
     [posts, query, category, postType, tag, sort]
   );
+
+  // Any filter/search/sort change invalidates the current page -- jump
+  // back to page 1 so you're never stranded on an out-of-range page
+  // showing zero results.
+  useEffect(() => {
+    setPage(1);
+  }, [query, category, postType, tag, sort]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const hasActiveFilter = category !== "all" || postType !== "all" || tag !== "all" || query;
   const hasNoApprovedPosts = posts.length === 0;
@@ -29,6 +43,7 @@ export default function BlogsToolbar({ posts = [], tags = [], categories = [] })
     setPostType("all");
     setTag("all");
     setSort("latest");
+    setPage(1);
   };
 
   return (
@@ -77,7 +92,33 @@ export default function BlogsToolbar({ posts = [], tags = [], categories = [] })
       </div>
 
       {filtered.length > 0 ? (
-        <ArticlesGrid posts={filtered} />
+        <>
+          <ArticlesGrid posts={paginated} isAuthenticated={isAuthenticated} />
+
+          {totalPages > 1 && (
+            <div className="mt-6 flex items-center justify-between gap-4">
+              <button
+                type="button"
+                disabled={currentPage <= 1}
+                onClick={() => setPage(currentPage - 1)}
+                className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed dark:border-blue-400/20 dark:text-blue-100 dark:hover:bg-blue-950/40"
+              >
+                ← Previous
+              </button>
+              <span className="text-xs font-semibold text-slate-500 dark:text-blue-100/50">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                type="button"
+                disabled={currentPage >= totalPages}
+                onClick={() => setPage(currentPage + 1)}
+                className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed dark:border-blue-400/20 dark:text-blue-100 dark:hover:bg-blue-950/40"
+              >
+                Next →
+              </button>
+            </div>
+          )}
+        </>
       ) : (
         <ArticlesEmptyState hasNoApprovedPosts={hasNoApprovedPosts} hasActiveFilter={hasActiveFilter} onClear={clearFilters} />
       )}

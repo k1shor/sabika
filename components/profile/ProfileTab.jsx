@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Button from "@/components/Button";
 import Input from "@/components/Input";
 import { getRoleLabel } from "./profileUtils";
@@ -14,6 +14,19 @@ export default function ProfileTab({ user, onUserUpdate }) {
   const [website, setWebsite] = useState(user?.website || "");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ text: "", ok: true });
+
+  // user often arrives asynchronously (fetched by the parent after mount),
+  // so the useState initial values above can run before user is populated.
+  // This re-syncs the fields whenever fresh user data actually shows up.
+  useEffect(() => {
+    if (!user) return;
+    setName(user.name || "");
+    setUsername(user.username || "");
+    setBio(user.bio || "");
+    setTwitter(user.twitter || "");
+    setPhone(user.phone || "");
+    setWebsite(user.website || "");
+  }, [user]);
 
   const handleSave = async () => {
     setSaving(true);

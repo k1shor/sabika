@@ -104,7 +104,7 @@ export default function ApplyWriterPage() {
               name="category"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="mt-2 w-full rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15"
+              className="mt-2 w-full rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15 dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-white"
               required
             >
               <option value="entrance_exam_passed">Entrance exam-passed student</option>
@@ -152,7 +152,7 @@ export default function ApplyWriterPage() {
           </div>
 
           {err && (
-            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-400/30 dark:bg-red-500/15 dark:text-red-200">
               {err}
             </div>
           )}

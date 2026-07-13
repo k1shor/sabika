@@ -32,10 +32,6 @@ export async function GET(req, { params }) {
 
   await dbConnect();
 
-  // Edit mode bypasses the "approved" filter so an author can load their
-  // own draft/pending/rejected post — but that means it MUST be gated by
-  // auth + ownership, or anyone can read anyone else's unpublished post
-  // just by guessing a slug and appending ?edit=true.
   if (editMode) {
     const user = await getAuthUser();
     if (!user) {
@@ -139,29 +135,51 @@ export async function PATCH(req, { params }) {
       }
     }
 
-    if (Object.keys(updateFields).length === 0) {
+    if (Object.keys(updateFields).length === 0 && body.publish === undefined) {
       return NextResponse.json({ ok: false, error: "Nothing to update" }, { status: 400 });
     }
 
     const unsetFields = {};
+    // "publish" is an explicit intent sent by the edit form's Publish
+    // button, distinct from just saving edits. Without this, a draft
+    // (or admin-authored draft) had no way to ever become "approved" --
+    // admin edits used to just preserve whatever status.draft already
+    // was, and writer edits always forced "pending" with no way to
+    // signal "actually publish this now".
+    const wantsPublish = body.publish === true;
 
-    if (isAdmin) {
-      // admin edits stay approved — no re-review needed
+    if (wantsPublish && isAdmin) {
+      updateFields.status = "approved";
+      if (!post.publishedAt) updateFields.publishedAt = new Date();
+      updateFields.isFlagged = false;
+    } else if (wantsPublish && !isAdmin) {
+      // Same trust-tier rule as creating a new post: writers with 3+
+      // clean approvals auto-publish, everyone else goes to pending.
+      const [approvedCount, rejectedCount] = await Promise.all([
+        Post.countDocuments({ authorId: user.id, status: "approved" }),
+        Post.countDocuments({ authorId: user.id, status: "rejected" }),
+      ]);
+      const isTrustedWriter = approvedCount >= 3 && rejectedCount === 0;
+
+      updateFields.status = isTrustedWriter ? "approved" : "pending";
+      if (isTrustedWriter && !post.publishedAt) updateFields.publishedAt = new Date();
+      updateFields.isFlagged = false;
+    } else if (isAdmin) {
+      // Plain "save edits" (not publish) -- admin edits stay whatever
+      // status they already were, no re-review needed.
       updateFields.status = post.status;
     } else {
-      // writer edits go back to pending — admin must re-approve
-      updateFields.status = "pending";
+      // Plain "save edits" on an already-live post -- writer edits go
+      // back to pending, admin must re-approve. Only applies to posts
+      // that were already approved; editing a draft without hitting
+      // Publish just keeps it a draft.
+      if (post.status === "approved") {
+        updateFields.status = "pending";
+        unsetFields.publishedAt = "";
+      }
       updateFields.isFlagged = false;
-      // $set can't clear a field — undefined values are silently dropped.
-      // Use $unset to actually remove publishedAt so the post is treated
-      // as unpublished until re-approved.
-      unsetFields.publishedAt = "";
     }
 
-    // Apply the update on the actual document (not raw findByIdAndUpdate)
-    // so Mongoose validates only the fields being changed, instead of
-    // either failing on unrelated required fields (the old bug) or
-    // skipping all validation (runValidators: false — the worse bug).
     Object.assign(post, updateFields);
     if (unsetFields.publishedAt !== undefined) {
       post.publishedAt = undefined;
@@ -174,9 +192,12 @@ export async function PATCH(req, { params }) {
     return NextResponse.json({
       ok: true,
       post: { ...updated, _id: String(updated._id) },
-      message: isAdmin
-        ? "Post updated."
-        : "Post updated and sent for re-review. It will reappear once approved.",
+      message:
+        updateFields.status === "approved"
+          ? "Post published."
+          : updateFields.status === "pending"
+            ? "Post updated and sent for re-review. It will reappear once approved."
+            : "Draft saved.",
     });
 
   } catch (err) {

@@ -1,7 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import FilterButton from "./FilterButton";
 import { CATEGORY_LABELS, POST_TYPE_LABELS } from "./blogToolbarUtils";
+
+const TAG_LIMIT = 8;
 
 export default function BlogsFilters({
   categories,
@@ -14,6 +17,11 @@ export default function BlogsFilters({
   tag,
   onTagChange,
 }) {
+  const [showAllTags, setShowAllTags] = useState(false);
+
+  const visibleTags = showAllTags ? tags : tags.slice(0, TAG_LIMIT);
+  const hasMoreTags = tags.length > TAG_LIMIT;
+
   return (
     <>
       <div className="mt-3 flex flex-wrap gap-2">
@@ -36,11 +44,20 @@ export default function BlogsFilters({
               {POST_TYPE_LABELS[item] || item}
             </FilterButton>
           ))}
-          {tags.map((item) => (
+          {visibleTags.map((item) => (
             <FilterButton key={item} active={tag === item} onClick={() => onTagChange(item === tag ? "all" : item)}>
               #{item}
             </FilterButton>
           ))}
+          {hasMoreTags && (
+            <button
+              type="button"
+              onClick={() => setShowAllTags((prev) => !prev)}
+              className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1"
+            >
+              {showAllTags ? "Show less" : `+${tags.length - TAG_LIMIT} more`}
+            </button>
+          )}
         </div>
       )}
     </>

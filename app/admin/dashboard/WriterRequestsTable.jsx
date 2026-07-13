@@ -115,8 +115,8 @@ export default function WriterRequestsTable({ initialWriters = [] }) {
           )}
         </p>
         <Link href="/admin/writer-applications"
-          className="text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400">
-          View all \u2192
+          className="text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 underline">
+          View all 
         </Link>
       </div>
 

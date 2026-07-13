@@ -191,10 +191,12 @@ export async function POST(req) {
       isTrustedWriter = approvedCount >= 3 && rejectedCount === 0;
     }
 
-    const status = isAdmin
-      ? "approved"
-      : parsed.data.saveAsDraft
-        ? "draft"
+    // saveAsDraft wins regardless of role -- an admin clicking "Save as
+    // Draft" should get a draft too, not an instantly-published post.
+    const status = parsed.data.saveAsDraft
+      ? "draft"
+      : isAdmin
+        ? "approved"
         : isTrustedWriter
           ? "approved"
           : "pending";
