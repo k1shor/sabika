@@ -40,8 +40,35 @@ export async function POST(req) {
   const parsed = ResetPasswordSchema.safeParse(body);
 
   if (!parsed.success) {
+    // Token and password are validated by the same schema, but a
+    // failure on one has nothing to do with the other -- a weak
+    // password with a perfectly valid token used to return "Invalid
+    // or expired reset link", which is just wrong and confusing.
+    // Report the actual problem instead.
+    const issues = parsed.error.issues;
+    const tokenFailed = issues.some((i) => i.path[0] === "token");
+    const passwordIssues = issues.filter((i) => i.path[0] === "password");
+
+    if (tokenFailed) {
+      return NextResponse.json(
+        { ok: false, error: "Invalid or expired reset link" },
+        { status: 400 }
+      );
+    }
+
+    if (passwordIssues.length > 0) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: passwordIssues[0].message,
+          fields: { password: passwordIssues.map((i) => i.message) },
+        },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
-      { ok: false, error: "Invalid or expired reset link" },
+      { ok: false, error: "Invalid request." },
       { status: 400 }
     );
   }

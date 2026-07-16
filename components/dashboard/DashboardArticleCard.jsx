@@ -5,6 +5,12 @@ import { motion } from "framer-motion";
 import { fadeUp, formatDate } from "./dashboardUtils";
 
 export default function DashboardArticleCard({ post }) {
+  const authorName = post.isOfficialPost
+    ? "Nursing Nepal"
+    : post.isAnonymous
+      ? "Anonymous"
+      : post.authorId?.name || "Unknown";
+
   return (
     <motion.div variants={fadeUp} whileHover={{ x: 4 }}>
       <Link
@@ -38,7 +44,7 @@ export default function DashboardArticleCard({ post }) {
           {post.excerpt && <p className="line-clamp-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{post.excerpt}</p>}
           <div className="mt-auto flex items-center gap-2 pt-0.5">
             <span className="text-[10px] font-semibold text-slate-400">
-              {post.isAnonymous ? "Anonymous" : post.authorId?.name || "Nursing Nepal"}
+              {authorName}
             </span>
             <span className="text-slate-200 dark:text-slate-700">.</span>
             <span className="text-[10px] text-slate-400">{formatDate(post.publishedAt || post.createdAt)}</span>
