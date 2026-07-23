@@ -113,8 +113,8 @@ export async function POST(req) {
   user.passwordHash = await bcrypt.hash(parsed.data.password, 12);
   user.passwordResetTokenHash = undefined;
   user.passwordResetExpiresAt = undefined;
-  user.forgotPasswordToken = undefined;
-  user.forgotPasswordTokenExpiry = undefined;
+  // user.forgotPasswordToken = undefined;
+  // user.forgotPasswordTokenExpiry = undefined;
   await user.save();
 
   return NextResponse.json({

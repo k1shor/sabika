@@ -51,7 +51,11 @@ async function getPosts() {
       .populate("authorId", "name avatarUrl badge")
       .sort({ publishedAt: -1 })
       .lean();
-    return (posts || []).map(serializePost);
+      // If database is connected but has no posts
+    if (!posts || posts.length === 0) {
+      return DUMMY_POSTS || [];
+    }
+    return  posts.map(serializePost);
   } catch {
     return DUMMY_POSTS || [];
   }

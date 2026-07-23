@@ -130,17 +130,30 @@ export default function PostFormFields({
       {/* ── Category + Post Type ──────────────────────── */}
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className="text-sm font-semibold text-slate-700 dark:text-blue-100/80">
-            Category <span className="text-red-500">*</span>
-          </label>
-          <div className="mt-1.5">
-            {mode === "create" ? (
-              <select name="category" className={selectClass(!!fieldErrors?.category)}>
-                <option value="">Select category</option>
-                {CATEGORY_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
+        <label className="text-sm font-semibold text-slate-700 dark:text-blue-100/80">
+  Category <span className="text-red-500">*</span>
+</label>
+
+<div className="mt-1.5">
+  {mode === "create" ? (
+    <select
+      name="category"
+      className={`${selectClass(!!fieldErrors?.category)} bg-white text-slate-700 dark:bg-blue-950/30 dark:text-blue-100`}
+    >
+      <option value="" className="bg-white text-slate-700 dark:bg-blue-950 dark:text-blue-100">
+        Select category
+      </option>
+
+      {CATEGORY_OPTIONS.map((o) => (
+        <option
+          key={o.value}
+          value={o.value}
+          className="bg-white text-slate-700 dark:bg-blue-950 dark:text-blue-100"
+        >
+          {o.label}
+        </option>
+      ))}
+    </select>
             ) : (
               <select
                 value={category}
@@ -158,16 +171,26 @@ export default function PostFormFields({
         </div>
 
         <div>
-          <label className="text-sm font-semibold text-slate-700 dark:text-blue-100/80">
-            Post Type
-          </label>
-          <div className="mt-1.5">
-            {mode === "create" ? (
-              <select name="postType" className={selectClass(false)}>
-                {POST_TYPE_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
+        <label className="text-sm font-semibold text-slate-700 dark:text-blue-100/80">
+  Post Type
+</label>
+
+<div className="mt-1.5">
+  {mode === "create" ? (
+    <select
+      name="postType"
+      className={`${selectClass(false)} bg-white text-slate-700 dark:bg-blue-950/30 dark:text-blue-100`}
+    >
+      {POST_TYPE_OPTIONS.map((o) => (
+        <option
+          key={o.value}
+          value={o.value}
+          className="bg-white text-slate-700 dark:bg-blue-950 dark:text-blue-100"
+        >
+          {o.label}
+        </option>
+      ))}
+    </select>
             ) : (
               <select
                 value={postType}
@@ -186,14 +209,26 @@ export default function PostFormFields({
       {/* ── Flair + Read Time ─────────────────────────── */}
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className="text-sm font-semibold text-slate-700 dark:text-blue-100/80">Flair</label>
-          <div className="mt-1.5">
-            {mode === "create" ? (
-              <select name="flair" className={selectClass(false)}>
-                {FLAIR_OPTIONS.map((f) => (
-                  <option key={f.value} value={f.value}>{f.label}</option>
-                ))}
-              </select>
+        <label className="text-sm font-semibold text-slate-700 dark:text-blue-100/80">
+  Flair
+</label>
+
+<div className="mt-1.5">
+  {mode === "create" ? (
+    <select
+      name="flair"
+      className={`${selectClass(false)} bg-white text-slate-700 dark:bg-blue-950/30 dark:text-blue-100`}
+    >
+      {FLAIR_OPTIONS.map((f) => (
+        <option
+          key={f.value}
+          value={f.value}
+          className="bg-white text-slate-700 dark:bg-blue-950 dark:text-blue-100"
+        >
+          {f.label}
+        </option>
+      ))}
+    </select>
             ) : (
               <select
                 value={flair}

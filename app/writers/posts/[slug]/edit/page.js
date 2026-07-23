@@ -101,7 +101,10 @@ export default function EditPostPage() {
     });
 
   // ── save ──────────────────────────────────────────────
-  const handleSave = async () => {
+  // `publish: true` is only sent when the Publish button is used --
+  // plain "Save Changes" leaves status untouched (a draft stays a
+  // draft, an already-live post goes back to pending for re-review).
+  const handleSave = async (publish = false) => {
     setMsg(null);
     setFieldErrors({});
 
@@ -136,6 +139,7 @@ export default function EditPostPage() {
           readTime:    fields.readTime.trim() || "5 min read",
           coverImage:  fields.coverImage,
           isAnonymous: fields.isAnonymous,
+          publish,
         }),
       });
 
@@ -171,6 +175,8 @@ export default function EditPostPage() {
     </Container>
   );
 
+  const isDraft = post?.status === "draft";
+
   // ── render ────────────────────────────────────────────
   return (
     <Container>
@@ -189,7 +195,9 @@ export default function EditPostPage() {
               Edit Post
             </h1>
             <p className="mt-0.5 text-xs text-slate-500 dark:text-blue-100/50">
-              After saving, your post will go back for admin review before showing publicly.
+              {isDraft
+                ? "This post is a draft and is not visible to anyone yet."
+                : "After saving, your post will go back for admin review before showing publicly."}
             </p>
           </div>
           {post?.status && (
@@ -217,11 +225,13 @@ export default function EditPostPage() {
             onUploadInlineImage={handleUploadInlineImage}
           >
             {/* Warning */}
-            <div className="rounded-2xl border border-amber-200 bg-amber-50/60 px-4 py-3 dark:border-amber-400/20 dark:bg-amber-950/20">
-              <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
-                ⚠️ Saving will send your post back for admin review. It will be temporarily hidden until re-approved.
-              </p>
-            </div>
+            {!isDraft && (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50/60 px-4 py-3 dark:border-amber-400/20 dark:bg-amber-950/20">
+                <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
+                  ⚠️ Saving will send your post back for admin review. It will be temporarily hidden until re-approved.
+                </p>
+              </div>
+            )}
 
             {/* Success / error message */}
             {msg && (
@@ -235,7 +245,7 @@ export default function EditPostPage() {
             )}
 
             {/* Action buttons */}
-            <div className="flex gap-3">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <Link
                 href="/writers/posts"
                 className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-center text-sm font-bold text-slate-700 transition hover:bg-slate-50 dark:border-blue-400/20 dark:bg-blue-950/20 dark:text-blue-100"
@@ -244,12 +254,22 @@ export default function EditPostPage() {
               </Link>
               <Button
                 type="button"
-                onClick={handleSave}
+                onClick={() => handleSave(false)}
                 disabled={busy}
                 className="flex-1"
               >
                 {busy ? "Saving..." : "Save Changes"}
               </Button>
+              {isDraft && (
+                <button
+                  type="button"
+                  onClick={() => handleSave(true)}
+                  disabled={busy}
+                  className="flex-1 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-60"
+                >
+                  {busy ? "Publishing..." : "Publish"}
+                </button>
+              )}
             </div>
           </PostFormFields>
         </div>

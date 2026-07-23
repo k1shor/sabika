@@ -1,16 +1,11 @@
-import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/auth";
 import { dbConnect } from "@/lib/db";
 import { User } from "@/models/User";
 import { Post } from "@/models/Post";
-import AdminDashboardTabs from "./AdminDashboardTabs";
+import AdminDashboardTabs from "@/features/adminDashboard/components/AdminDashboardTabs";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
-  const auth = await requireAdmin();
-  if (!auth.ok) redirect("/login?next=/admin/dashboard");
-
   await dbConnect();
 
   const now = Date.now();
@@ -25,6 +20,7 @@ export default async function AdminDashboardPage() {
     flaggedPosts,
     postsPerDayRaw,
     usersPerWeekRaw,
+    postStatusRaw,
     writerRequestsRaw,
     recentUsersRaw,
     recentPostsRaw,
@@ -44,15 +40,15 @@ export default async function AdminDashboardPage() {
       { $group: { _id: { $week: "$createdAt" }, count: { $sum: 1 } } },
       { $sort: { _id: 1 } },
     ]),
+    Post.aggregate([
+      { $group: { _id: "$status", count: { $sum: 1 } } },
+    ]),
     User.find(
       { "writerVerification.status": "pending" },
       { name: 1, email: 1, writerVerification: 1 }
     ).sort({ "writerVerification.submittedAt": -1 }).limit(10).lean(),
     User.find({}, { name: 1, createdAt: 1, "writerVerification.status": 1 })
       .sort({ createdAt: -1 }).limit(5).lean(),
-    // Only "approved" posts are actually live -- pulling from all
-    // statuses here made the activity feed label pending/draft/rejected
-    // posts as "published a new blog", which was never true.
     Post.find({ status: "approved" }, { title: 1, authorId: 1, createdAt: 1 })
       .populate("authorId", "name")
       .sort({ createdAt: -1 }).limit(5).lean(),
@@ -67,6 +63,11 @@ export default async function AdminDashboardPage() {
     count: d.count,
     label: `W${i + 1}`,
   }));
+
+  const postStatusCounts = { approved: 0, pending: 0, rejected: 0, draft: 0 };
+  for (const row of postStatusRaw) {
+    if (row._id in postStatusCounts) postStatusCounts[row._id] = row.count;
+  }
 
   const activity = [
     ...recentUsersRaw.map((u) => ({
@@ -88,32 +89,24 @@ export default async function AdminDashboardPage() {
     name:        u.name  || "",
     email:       u.email || "",
     category:    u.writerVerification?.category    || "",
-    workplace:   u.writerVerification?.workplace   || "\u2014",
-    licenseNo:   u.writerVerification?.licenseNo   || "\u2014",
+    workplace:   u.writerVerification?.workplace   || "—",
+    licenseNo:   u.writerVerification?.licenseNo   || "—",
     documentUrl: u.writerVerification?.documentUrl || "",
     submittedAt: u.writerVerification?.submittedAt
       ? new Date(u.writerVerification.submittedAt).toISOString()
       : null,
   }));
 
-  const stats = {
-    totalUsers,
-    bannedUsers,
-    totalPosts,
-    pendingWriters,
-    flaggedPosts,
-  };
+  const stats = { totalUsers, bannedUsers, totalPosts, pendingWriters, flaggedPosts };
 
   return (
     <AdminDashboardTabs
       stats={stats}
       postsPerDay={postsPerDay}
       usersPerWeek={usersPerWeek}
+      postStatusCounts={postStatusCounts}
       activity={activity}
       writerRequests={writerRequests}
-      pendingWriters={pendingWriters}
-      currentUserId={auth.user.id}
-      user={auth.user}
     />
   );
 }

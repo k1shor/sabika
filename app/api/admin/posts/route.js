@@ -80,7 +80,16 @@ export async function GET(req) {
     const q       = searchParams.get("q");
 
     const filter = {};
-    if (status)             filter.status   = status;
+    if (status) {
+      filter.status = status;
+    } else {
+      // Drafts are private, unsubmitted work-in-progress -- the admin
+      // has no reason to see them and no "draft" option is ever
+      // offered in the filter UI. Without this, the default "all"
+      // view mixed drafts in with pending posts, showing identical
+      // Approve/Reject buttons on content the writer never submitted.
+      filter.status = { $ne: "draft" };
+    }
     if (flagged === "true") filter.isFlagged = true;
     if (q && q.trim()) {
       const pattern = new RegExp(escapeRegex(q.trim()), "i");

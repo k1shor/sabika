@@ -3,26 +3,8 @@
 import { useEffect, useState } from "react";
 import Button from "@/components/Button";
 import Input from "@/components/Input";
-
-const ROLES = ["visitor", "blog_writer", "admin"];
-
-function roleLabel(role) {
-  if (role === "admin") return "Admin";
-  if (role === "blog_writer") return "Blog Writer";
-  return "Visitor";
-}
-
-function roleColor(role) {
-  if (role === "admin") return "bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-200";
-  if (role === "blog_writer") return "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200";
-  return "bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-100";
-}
-
-function formatDate(value) {
-  const date = new Date(value || 0);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleDateString();
-}
+import { fetchUsers, updateUserRole, toggleUserBan } from "../services/userService";
+import { ROLES, roleLabel, roleColor, formatDate } from "../utils/userUtils";
 
 export default function AdminUsersPanel({ currentUserId = null }) {
   const [users, setUsers]   = useState([]);
@@ -37,11 +19,7 @@ export default function AdminUsersPanel({ currentUserId = null }) {
     setLoading(true);
     setMsg(null);
     try {
-      const qs = new URLSearchParams();
-      if (search.trim()) qs.set("q", search.trim());
-      qs.set("page", String(p));
-      const res  = await fetch(`/api/admin/users?${qs}`, { cache: "no-store" });
-      const data = await res.json().catch(() => null);
+      const data = await fetchUsers({ query: search, page: p });
       if (!data?.ok) { setMsg(data?.error || "Failed to load users"); setUsers([]); return; }
       setUsers(Array.isArray(data.users) ? data.users : []);
       setTotalPages(data.pagination?.totalPages || 1);
@@ -64,12 +42,7 @@ export default function AdminUsersPanel({ currentUserId = null }) {
     setBusyId(id);
     setMsg(null);
     try {
-      const res  = await fetch(`/api/admin/users/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role }),
-      });
-      const data = await res.json().catch(() => null);
+      const data = await updateUserRole(id, role);
       if (!data?.ok) { setMsg(data?.error || "Failed to update role"); return; }
       setUsers((list) => list.map((u) => (u._id === id ? { ...u, ...data.user } : u)));
       setMsg(`Role changed to ${roleLabel(role)}.`);
@@ -84,12 +57,7 @@ export default function AdminUsersPanel({ currentUserId = null }) {
     setBusyId(id);
     setMsg(null);
     try {
-      const res  = await fetch(`/api/admin/users/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isBanned: !isBanned }),
-      });
-      const data = await res.json().catch(() => null);
+      const data = await toggleUserBan(id, isBanned);
       if (!data?.ok) { setMsg(data?.error || "Failed"); return; }
       setUsers((list) => list.map((u) => (u._id === id ? { ...u, ...data.user } : u)));
       setMsg(!isBanned ? "User banned." : "User unbanned.");
@@ -198,8 +166,8 @@ export default function AdminUsersPanel({ currentUserId = null }) {
                       onClick={() => toggleBan(user._id, user.isBanned)}
                       className={`rounded-xl border px-3 py-2 text-xs font-extrabold transition disabled:cursor-not-allowed disabled:opacity-60
                         ${user.isBanned
-                          ? "border-green-200 bg-green-50 text-green-700 hover:bg-green-100 dark:border-green-400/30 dark:bg-green-500/15 dark:text-green-200"
-                          : "border-red-200 bg-red-50 text-red-700 hover:bg-red-100 dark:border-red-400/30 dark:bg-red-500/15 dark:text-red-200"
+                          ? "border-green-200 bg-green-50 text-green-700 hover:bg-green-100 dark:border-green-400/30 dark:bg-green-50/15 dark:text-white-200"
+                          : "border-red-200 bg-red-50 text-red-700 hover:bg-red-100 dark:border-red-400/30 dark:bg-red-450/15 dark:text-white-200"
                         }`}
                     >
                       {isBusy ? "..." : user.isBanned ? "Unban" : "Ban"}

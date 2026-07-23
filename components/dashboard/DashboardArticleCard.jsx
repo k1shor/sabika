@@ -11,10 +11,20 @@ export default function DashboardArticleCard({ post }) {
       ? "Anonymous"
       : post.authorId?.name || "Unknown";
 
+  // Anything not "approved" isn't publicly viewable -- linking to the
+  // public /blogs/[slug] page for a draft/pending/rejected post just
+  // 404s. Route to the edit page instead. This only ever applies to
+  // the viewer's own posts in practice, since "Latest Articles" and
+  // "Nursing Nepal" tabs only ever contain approved posts already.
+  const isPubliclyViewable = post.status === "approved";
+  const href = isPubliclyViewable
+    ? `/blogs/${encodeURIComponent(post.slug)}`
+    : `/writers/posts/${encodeURIComponent(post.slug)}/edit`;
+
   return (
     <motion.div variants={fadeUp} whileHover={{ x: 4 }}>
       <Link
-        href={`/blogs/${encodeURIComponent(post.slug)}`}
+        href={href}
         className="group flex gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-[#DC143C]/30 hover:shadow-md dark:border-slate-700/50 dark:bg-slate-900/50"
       >
         {post.coverImage ? (
@@ -33,6 +43,11 @@ export default function DashboardArticleCard({ post }) {
             {post.category && (
               <span className="rounded-full bg-[#DC143C]/8 px-2 py-0.5 text-[10px] font-bold text-[#DC143C] dark:bg-red-950/30 dark:text-red-400">
                 {post.category.replace(/_/g, " ")}
+              </span>
+            )}
+            {!isPubliclyViewable && post.status && (
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                {post.status}
               </span>
             )}
             {post.readTime && <span className="ml-auto text-[10px] text-slate-400">{post.readTime}</span>}
