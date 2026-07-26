@@ -10,6 +10,28 @@ function formatDate(value) {
   return date.toLocaleString();
 }
 
+// Different notification types point to different places -- a
+// pending-review notification (sent to admins) or a rejected-post
+// notification (sent to the writer) both reference a post that is
+// NOT publicly visible, so linking to /blogs/[slug] always showed
+// "Article not found". Route each type to somewhere the person can
+// actually act on it.
+function notificationHref(item) {
+  switch (item.type) {
+    case "post_pending_review":
+      return "/admin/posts";
+    case "writer_application":
+      return "/admin/writer-applications";
+    case "post_rejected":
+      return item.postSlug ? `/writers/posts/${item.postSlug}/edit` : "/writers/posts";
+    case "new_post":
+    case "post_approved":
+      return item.postSlug ? `/blogs/${item.postSlug}` : "/notifications";
+    default:
+      return item.postSlug ? `/blogs/${item.postSlug}` : "/notifications";
+  }
+}
+
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -93,7 +115,7 @@ export default function NotificationsPage() {
             {notifications.map((item) => (
               <Link
                 key={item._id}
-                href={item.postSlug ? `/blogs/${item.postSlug}` : "/notifications"}
+                href={notificationHref(item)}
                 className="rounded-2xl border border-slate-200 bg-white/80 p-4 transition hover:border-blue-300 hover:bg-white dark:border-blue-400/20 dark:bg-blue-950/30 dark:hover:bg-blue-950/45"
               >
                 <div className="flex items-start justify-between gap-3">

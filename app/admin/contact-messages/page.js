@@ -15,7 +15,11 @@ function replyHref(item) {
     : "Re: Your Nursing Nepal message";
   const body = `Hi ${item.name},\\n\\nThank you for contacting Nursing Nepal.\\n\\n`;
 
-  return `mailto:${encodeURIComponent(item.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  // The recipient address itself must stay unencoded -- only the query
+  // params (subject/body) get encoded. Encoding the whole thing turned
+  // "@" into "%40", producing a mailto link most mail clients / browsers
+  // fail to open correctly.
+  return `mailto:${item.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
 export default function AdminContactMessagesPage() {
@@ -105,10 +109,11 @@ export default function AdminContactMessagesPage() {
                     {formatDate(item.createdAt)}
                   </p>
                 </div>
-                <span className={`rounded-full px-2 py-1 text-xs font-extrabold ${item.emailSent
+                <span className={`rounded-full px-2 py-1 text-xs font-extrabold ${
+                  item.emailSent
                     ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200"
                     : "bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200"
-                  }`}>
+                }`}>
                   {item.emailSent ? "Email sent" : "Saved only"}
                 </span>
               </div>
@@ -121,12 +126,12 @@ export default function AdminContactMessagesPage() {
                 </p>
               ) : null}
               <div className="mt-4">
-              <a
-  href={replyHref(item)}
-  className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white/80 px-4 py-2 text-sm font-extrabold text-slate-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-blue-100 dark:hover:border-blue-300/40 dark:hover:bg-blue-950/50 dark:hover:shadow-blue-950/40"
->
-  Reply by email
-</a>
+                <a
+                  href={replyHref(item)}
+                  className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white/80 px-4 py-2 text-sm font-extrabold text-slate-700 transition hover:bg-white dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-blue-100"
+                >
+                  Reply by email
+                </a>
               </div>
             </div>
           ))}
