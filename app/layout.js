@@ -1,6 +1,4 @@
 import "./globals.css";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 import Analytics from "@/components/Analytics";
 import LayoutContent from "@/components/LayoutContent";
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";

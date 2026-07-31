@@ -68,8 +68,6 @@ const UserSchema = new mongoose.Schema(
     },
 
     // Password Reset & Email Verification Tokens
-    // forgotPasswordToken: String,
-    // forgotPasswordTokenExpiry: Date,
     verifyToken: String,
     verifyTokenExpiry: Date,
     passwordResetTokenHash: String,

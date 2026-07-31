@@ -4,6 +4,7 @@ import { getAuthUser } from "@/lib/auth";
 import { dbConnect, isDbEnabled } from "@/lib/db";
 import { User } from "@/models/User";
 import { Notification } from "@/models/Notification";
+import { checkRateLimit, rateLimitResponse } from "@/lib/rateLimit";
 
 const WriterApplicationSchema = z.object({
   writerCategory: z.enum([
@@ -46,6 +47,9 @@ const WriterApplicationSchema = z.object({
 
 export async function POST(req) {
   try {
+    const limit = checkRateLimit(req, { name: "writer-application", limit: 10, windowMs: 60 * 60 * 1000 });
+    if (!limit.ok) return rateLimitResponse(limit);
+
     const authUser = await getAuthUser();
 
     if (!authUser) {

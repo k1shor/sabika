@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import AdminPostsPanel from "@/features/adminPosts/components/AdminPostsPanel";
 
 export default function AdminPostsPage() {
@@ -9,7 +10,9 @@ export default function AdminPostsPage() {
           Review, approve, reject, edit, or remove posts from one focused page.
         </p>
       </div>
-      <AdminPostsPanel />
+      <Suspense fallback={<div className="h-40 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-800" />}>
+        <AdminPostsPanel />
+      </Suspense>
     </div>
   );
 }

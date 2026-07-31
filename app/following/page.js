@@ -34,13 +34,10 @@ export default function FollowingPage() {
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, []);
 
   const unfollow = async (writerId) => {
-    // Matches the endpoint FollowWriterButton actually uses --
-    // api/writers/[id]/follow is a separate, unused implementation.
     const res = await fetch("/api/auth/me/following", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },

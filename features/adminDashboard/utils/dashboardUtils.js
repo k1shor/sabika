@@ -1,10 +1,12 @@
-import { IconHome, IconPosts, IconUsers, IconWriter, IconMail, IconPost, IconJoin } from "../icons/icons";
+import { IconHome, IconPosts, IconUsers, IconWriter, IconMail, IconFlag, IconPost, IconJoin } from "../icons/icons";
 
 export const NAV = [
   { label: "Dashboard",       href: "/admin/dashboard",           Icon: IconHome },
   { label: "Posts",           href: "/admin/posts",               Icon: IconPosts },
   { label: "Users",           href: "/admin/users/manage",        Icon: IconUsers },
   { label: "Writer Requests", href: "/admin/writer-applications", Icon: IconWriter },
+  { label: "Reports",         href: "/admin/reports",             Icon: IconFlag },
+  { label: "Audit Logs",      href: "/admin/audit-logs",          Icon: IconFlag },
   { label: "Contact",         href: "/admin/contact-messages",    Icon: IconMail },
 ];
 

@@ -8,7 +8,7 @@ export default function SavedPostList({ posts }) {
       {posts.map((post) => (
         <Link
           key={post._id || post.slug}
-          href={`/blogs/${post.postId?.slug}`}
+          href={post.postId?.slug ? `/blogs/${encodeURIComponent(post.postId.slug)}` : "#"}
           className="rounded-2xl border border-slate-200 bg-white/80 p-4 transition hover:border-blue-300 hover:bg-white dark:border-blue-400/20 dark:bg-blue-950/30 dark:hover:bg-blue-950/45"
         >
           <div className="text-sm font-extrabold text-slate-900 dark:text-white">

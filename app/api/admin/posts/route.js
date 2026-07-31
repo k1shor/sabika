@@ -4,6 +4,7 @@ import sanitizeHtml from "sanitize-html";
 import { dbConnect, isDbEnabled } from "@/lib/db";
 import { Post } from "@/models/Post";
 import { requireAdmin } from "@/lib/auth";
+import { logAdminAction } from "@/lib/audit";
 import { DUMMY_POSTS } from "@/lib/dummy";
 
 export const runtime = "nodejs";
@@ -41,18 +42,24 @@ function optionalString(schema) {
   }, schema.optional());
 }
 
-// Escape user input before dropping it into a RegExp so search text
-// like "c++" or "a.b" can't break the query or match unintended things.
 function escapeRegex(value) {
   return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
+
+// Accepts a full URL (Cloudinary) OR a relative path starting with "/"
+// (the local-upload fallback used when Cloudinary isn't configured --
+// see lib upload route's saveLocalImage). A strict .url() check here
+// would reject valid locally-stored images.
+const ImagePathSchema = z
+  .string()
+  .refine((val) => val.startsWith("http") || val.startsWith("/"), "Must be a valid URL or local path");
 
 const CreatePostSchema = z.object({
   title:       z.string().trim().min(3).max(160),
   slug:        optionalString(z.string().min(3).max(200)),
   excerpt:     optionalString(z.string().max(400)),
-  coverImage:  optionalString(z.string().url()),
-  images:      z.array(z.string().url()).optional(),
+  coverImage:  optionalString(ImagePathSchema),
+  images:      z.array(ImagePathSchema).optional(),
   contentHtml: optionalString(z.string().min(10)),
   tags:        z.array(z.string().trim().min(1).max(40)).max(5).optional(),
   readTime:    optionalString(z.string().max(30)),
@@ -83,11 +90,6 @@ export async function GET(req) {
     if (status) {
       filter.status = status;
     } else {
-      // Drafts are private, unsubmitted work-in-progress -- the admin
-      // has no reason to see them and no "draft" option is ever
-      // offered in the filter UI. Without this, the default "all"
-      // view mixed drafts in with pending posts, showing identical
-      // Approve/Reject buttons on content the writer never submitted.
       filter.status = { $ne: "draft" };
     }
     if (flagged === "true") filter.isFlagged = true;
@@ -96,7 +98,9 @@ export async function GET(req) {
       filter.$or = [{ title: pattern }, { excerpt: pattern }];
     }
 
-    const [posts, total] = await Promise.all([
+    const nonDraftFilter = { status: { $ne: "draft" } };
+
+    const [posts, total, statusCountsRaw, flaggedCount] = await Promise.all([
       Post.find(filter)
         .populate("authorId", "name avatarUrl badge")
         .sort({ createdAt: -1 })
@@ -104,11 +108,23 @@ export async function GET(req) {
         .limit(limit)
         .lean(),
       Post.countDocuments(filter),
+      Post.aggregate([
+        { $match: nonDraftFilter },
+        { $group: { _id: "$status", count: { $sum: 1 } } },
+      ]),
+      Post.countDocuments({ ...nonDraftFilter, isFlagged: true }),
     ]);
+
+    const counts = { all: 0, approved: 0, pending: 0, rejected: 0, flagged: flaggedCount };
+    for (const row of statusCountsRaw) {
+      if (row._id in counts) counts[row._id] = row.count;
+      counts.all += row.count;
+    }
 
     return NextResponse.json({
       ok: true,
       posts,
+      counts,
       pagination: { page, total, totalPages: Math.ceil(total / limit) },
     });
   } catch (err) {
@@ -155,10 +171,20 @@ export async function POST(req) {
       tags:           parsed.data.tags        || [],
       authorId:       auth.user.id,
       isAnonymous:    false,
-      isOfficialPost: true,   // admin posts = Nursing Nepal
+      isOfficialPost: true,
       status:         "approved",
       readTime:       parsed.data.readTime    || "5 min read",
       publishedAt:    new Date(),
+    });
+
+    await logAdminAction({
+      req,
+      actor: auth.user,
+      action: "admin_post_created",
+      targetType: "post",
+      targetId: post._id,
+      targetLabel: post.title,
+      metadata: { slug: post.slug, status: post.status, isOfficialPost: true },
     });
 
     return NextResponse.json({ ok: true, post });

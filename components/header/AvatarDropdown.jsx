@@ -9,8 +9,7 @@ export default function AvatarDropdown({ user, onLogout }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const canWritePosts =
-    user?.role === "admin" ||
-    (user?.role === "blog_writer" && user?.writerVerification?.status === "approved");
+    user?.role === "blog_writer" && user?.writerVerification?.status === "approved";
 
   useEffect(() => {
     function handleClick(event) {

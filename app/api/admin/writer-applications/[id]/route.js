@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { dbConnect, isDbEnabled } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
+import { logAdminAction } from "@/lib/audit";
 import { User } from "@/models/User";
 import { Notification } from "@/models/Notification";
 
@@ -83,6 +84,21 @@ export async function PATCH(req, { params }) {
       // don't fail the whole request if notification fails
       console.error("Notification failed:", notifErr.message);
     }
+
+    await logAdminAction({
+      req,
+      actor: auth.user,
+      action: status === "approved" ? "writer_application_approved" : "writer_application_rejected",
+      targetType: "writer_application",
+      targetId: user._id,
+      targetLabel: user.email || user.name || "",
+      metadata: {
+        status,
+        category: user.writerVerification?.category || "",
+        badge: user.badge || "",
+        hasRejectionReason: Boolean(user.writerVerification?.rejectionReason),
+      },
+    });
 
     return NextResponse.json({
       ok: true,

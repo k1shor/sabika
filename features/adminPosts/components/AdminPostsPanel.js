@@ -1,12 +1,25 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import CreatePostForm from "./CreatePostForm";
 import CommunityPostsList from "./CommunityPostsList";
 
 export default function AdminPostsPanel() {
-  const [activeTab,  setActiveTab]  = useState("official");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  
+  const initialTab = searchParams.get("tab") === "community" ? "community" : "official";
+  const [activeTab,  setActiveTab]  = useState(initialTab);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleTabChange = (id) => {
+    setActiveTab(id);
+    const params = new URLSearchParams(searchParams);
+    params.set("tab", id);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
 
   return (
     <div className="grid gap-6">
@@ -18,7 +31,7 @@ export default function AdminPostsPanel() {
           <button
             key={id}
             type="button"
-            onClick={() => setActiveTab(id)}
+            onClick={() => handleTabChange(id)}
             className={`rounded-xl px-5 py-2 text-sm font-bold transition ${
               activeTab === id
                 ? "bg-blue-600 text-white shadow-sm"

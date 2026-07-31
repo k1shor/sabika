@@ -1,4 +1,3 @@
-import Link from "next/link";
 import Container from "@/components/Container";
 import FollowWriterButton from "@/components/FollowWriterButton";
 import { dbConnect } from "@/lib/db";
@@ -51,7 +50,7 @@ export default async function WriterProfilePage({ params }) {
   const isLoggedIn = Boolean(authUser?.id);
 
   const [posts, followerCount, existingFollow] = await Promise.all([
-    Post.find({ authorId: writer._id }).sort({ publishedAt: -1 }).lean(),
+    Post.find({ authorId: writer._id, status: "approved" }).sort({ publishedAt: -1 }).lean(),
     Follow.countDocuments({ writerId: writer._id }),
     isLoggedIn ? Follow.findOne({ followerId: authUser.id, writerId: writer._id }).lean() : null,
   ]);

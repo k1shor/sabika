@@ -26,7 +26,7 @@ export async function GET() {
       User.countDocuments(),
       Post.countDocuments(),
       User.countDocuments({ "writerVerification.status": "pending" }),
-      Post.countDocuments({ flagged: true }),
+      Post.countDocuments({ isFlagged: true }),
     ]);
 
     // ── Posts per day (last 7 days) ───────────────────────────────────────────

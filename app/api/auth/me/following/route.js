@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { dbConnect } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { Follow } from "@/models/Follow";
@@ -53,6 +54,9 @@ export async function POST(req) {
 
     const { writerId } = await req.json().catch(() => ({}));
     if (!writerId) return NextResponse.json({ ok: false, error: "writerId required" }, { status: 400 });
+    if (!mongoose.Types.ObjectId.isValid(writerId)) {
+      return NextResponse.json({ ok: false, error: "Invalid writerId" }, { status: 400 });
+    }
 
     if (String(auth.user.id) === String(writerId)) {
       return NextResponse.json({ ok: false, error: "Cannot follow yourself" }, { status: 400 });
@@ -96,6 +100,9 @@ export async function DELETE(req) {
 
     const { writerId } = await req.json().catch(() => ({}));
     if (!writerId) return NextResponse.json({ ok: false, error: "writerId required" }, { status: 400 });
+    if (!mongoose.Types.ObjectId.isValid(writerId)) {
+      return NextResponse.json({ ok: false, error: "Invalid writerId" }, { status: 400 });
+    }
 
     await dbConnect();
 

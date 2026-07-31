@@ -4,6 +4,22 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { BellIcon } from "./HeaderIcons";
 
+function notificationHref(item) {
+  switch (item.type) {
+    case "post_pending_review":
+      return "/admin/posts?tab=community&status=pending";
+    case "writer_application":
+      return "/admin/writer-applications";
+    case "post_rejected":
+      return item.postSlug ? `/writers/posts/${item.postSlug}/edit` : "/writers/posts";
+    case "new_post":
+    case "post_approved":
+      return item.postSlug ? `/blogs/${item.postSlug}` : "/notifications";
+    default:
+      return item.postSlug ? `/blogs/${item.postSlug}` : "/notifications";
+  }
+}
+
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -25,7 +41,6 @@ export default function NotificationBell() {
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, []);
 
@@ -74,7 +89,7 @@ export default function NotificationBell() {
               </div>
             ) : (
               notifications.slice(0, 5).map((item) => (
-                <Link key={item._id} href={item.postSlug ? `/blogs/${item.postSlug}` : "/notifications"} onClick={() => setOpen(false)} className="flex items-start gap-3 rounded-xl px-3 py-3 transition hover:bg-slate-50 dark:hover:bg-blue-950/40">
+                <Link key={item._id} href={notificationHref(item)} onClick={() => setOpen(false)} className="flex items-start gap-3 rounded-xl px-3 py-3 transition hover:bg-slate-50 dark:hover:bg-blue-950/40">
                   <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${item.read ? "bg-slate-200 dark:bg-blue-100/20" : "bg-red-500"}`} />
                   <p className="text-sm font-semibold leading-snug text-slate-700 dark:text-blue-100/80">{item.message}</p>
                 </Link>

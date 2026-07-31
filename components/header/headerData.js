@@ -33,7 +33,6 @@ export function getMobileNavItems({ isAdmin, canApplyAsWriter, canWritePosts, is
       { href: "/about", label: "About" },
       { href: "/blogs", label: "Articles" },
       { href: "/faq", label: "FAQ" },
-      { href: "/writers/posts", label: "My Posts" },
       { href: "/admin/dashboard", label: "Admin Dashboard" },
     ];
   }

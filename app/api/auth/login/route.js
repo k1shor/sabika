@@ -4,6 +4,7 @@ import { z } from "zod";
 import { dbConnect, isDbEnabled } from "@/lib/db";
 import { User } from "@/models/User";
 import { signToken, normalizeRole } from "@/lib/auth";
+import { checkRateLimit, rateLimitResponse } from "@/lib/rateLimit";
 
 const LoginSchema = z.object({
   email: z.string().email(),
@@ -12,6 +13,9 @@ const LoginSchema = z.object({
 
 export async function POST(req) {
   try {
+    const limit = checkRateLimit(req, { name: "auth-login", limit: 10, windowMs: 15 * 60 * 1000 });
+    if (!limit.ok) return rateLimitResponse(limit);
+
     const body = await req.json().catch(() => null);
     const parsed = LoginSchema.safeParse(body);
 
@@ -110,7 +114,7 @@ export async function POST(req) {
 
     res.cookies.set("token", token, {
       httpOnly: true,
-      sameSite: "lax",
+      sameSite: "strict",
       secure: process.env.NODE_ENV === "production",
       path: "/",
       maxAge: 60 * 60 * 24,

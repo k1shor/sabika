@@ -61,15 +61,6 @@ async function getPosts() {
   }
 }
 
-// Guests see official (NursingNepal) posts pinned to the top, each group
-// still sorted newest-first internally. Logged-in users see the normal
-// newest-first order untouched.
-function orderForGuests(posts) {
-  const official = posts.filter((p) => p.isOfficialPost);
-  const rest = posts.filter((p) => !p.isOfficialPost);
-  return [...official, ...rest];
-}
-
 export default async function BlogsPage() {
   const [posts, authUser] = await Promise.all([getPosts(), getAuthUser()]);
   const isAuthenticated = Boolean(authUser);

@@ -9,6 +9,7 @@ import BlogHistoryTracker from "@/components/blogs/BlogHistoryTracker";
 import SavePostButton from "@/components/SavePostButton";
 import DeletePostButton from "@/components/DeletePostButton";
 import BlogDetailAnimated from "@/components/blogs/BlogDetailAnimated";
+import ReportButton from "@/components/ReportButton";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -61,17 +62,23 @@ function findDummy(slug) {
   );
 }
 
-async function findDbPost(slug) {
+async function findDbPost(slug, currentUser) {
   const s = normalizeSlug(slug);
   const { dbConnect } = await import("@/lib/db");
   const { Post }      = await import("@/models/Post");
   await dbConnect();
 
-  const post = await Post.findOne({ slug: s, status: "approved" })
+  const post = await Post.findOne({ slug: s })
     .populate("authorId", "name avatarUrl badge username")
     .lean();
 
   if (!post) return null;
+
+  if (post.status !== "approved") {
+    const isAuthor = currentUser && String(post.authorId?._id || post.authorId) === String(currentUser.id);
+    const isAdmin = currentUser && currentUser.role === "admin";
+    if (!isAuthor && !isAdmin) return null;
+  }
 
   return {
     ...post,
@@ -89,11 +96,11 @@ async function findDbPost(slug) {
   };
 }
 
-async function getPost(slug) {
+async function getPost(slug, currentUser) {
   if (!slug) return null;
   if (!isDbEnabled()) return findDummy(slug) || null;
   try {
-    const dbPost = await findDbPost(slug);
+    const dbPost = await findDbPost(slug, currentUser);
     if (dbPost) return dbPost;
   } catch {}
   return findDummy(slug) || null;
@@ -102,10 +109,8 @@ async function getPost(slug) {
 export default async function BlogDetailsPage(props) {
   const params = await props.params;
 
-  const [post, currentUser] = await Promise.all([
-    getPost(params?.slug),
-    getAuthUser(),
-  ]);
+  const currentUser = await getAuthUser();
+  const post = await getPost(params?.slug, currentUser);
 
   if (!post) {
     return (
@@ -161,6 +166,9 @@ export default async function BlogDetailsPage(props) {
 
             <div className="flex flex-wrap items-center gap-2">
               <SavePostButton postId={post._id} slug={post.slug} />
+              {currentUser && !canEdit && post._id && (
+                <ReportButton targetType="post" targetId={post._id} />
+              )}
 
               {canEdit && (
                 <>

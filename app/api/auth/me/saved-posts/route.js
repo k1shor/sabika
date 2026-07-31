@@ -3,14 +3,7 @@ import mongoose from "mongoose";
 import { dbConnect } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { SavedPost } from "@/models/SavedPost";
-import { Post } from "@/models/Post"; // required so mongoose can resolve
-                                       // the "Post" ref used by populate()
-                                       // below -- without this import,
-                                       // mongoose has no registered Post
-                                       // model in this route's execution
-                                       // context and .populate() throws
-                                       // "Schema hasn't been registered
-                                       // for model \"Post\"".
+import "@/models/Post"; // Register the "Post" model for populate().
 
 export async function GET() {
   try {

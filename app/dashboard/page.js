@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import Container from "@/components/Container";
 import DashboardArticlesSection from "@/components/dashboard/DashboardArticlesSection";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
-import { DashboardLoading, DashboardLoginPrompt } from "@/components/dashboard/DashboardStates";
+import { DashboardLoading } from "@/components/dashboard/DashboardStates";
 import QuickStats from "@/components/dashboard/QuickStats";
 import WelcomeBanner from "@/components/dashboard/WelcomeBanner";
 import { getRecentlyViewed, stagger } from "@/components/dashboard/dashboardUtils";
@@ -50,12 +50,11 @@ export default function DashboardPage() {
       })
       .catch(() => null);
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRecentlyViewed(getRecentlyViewed());
   }, []);
 
   if (loading) return <DashboardLoading />;
-  if (!user) return <DashboardLoginPrompt />;
+  if (!user) return null;
 
   return (
     <Container>

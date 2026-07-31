@@ -3,6 +3,7 @@ import nodemailer from "nodemailer";
 import { dbConnect, isDbEnabled } from "@/lib/db";
 import { ContactSchema } from "@/lib/validators";
 import { ContactMessage } from "@/models/ContactMessage";
+import { checkRateLimit, rateLimitResponse } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -76,6 +77,9 @@ async function sendContactEmail({ name, email, subject, message }) {
 
 export async function POST(req) {
   try {
+    const limit = checkRateLimit(req, { name: "contact-submit", limit: 5, windowMs: 10 * 60 * 1000 });
+    if (!limit.ok) return rateLimitResponse(limit);
+
     const body = await req.json().catch(() => null);
     const parsed = ContactSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ ok: false, error: "Invalid data" }, { status: 400 });

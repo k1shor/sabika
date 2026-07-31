@@ -4,6 +4,7 @@ import { dbConnect, isDbEnabled } from "@/lib/db";
 import { Post } from "@/models/Post";
 import { Notification } from "@/models/Notification";
 import { requireAdmin } from "@/lib/auth";
+import { logAdminAction } from "@/lib/audit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,6 +55,8 @@ export async function PATCH(req, { params }) {
       }
     }
 
+
+
     // Validates only the fields actually changed, instead of disabling
     // validation entirely (the old runValidators: false skipped the
     // status enum check too).
@@ -76,6 +79,22 @@ export async function PATCH(req, { params }) {
       }
     }
 
+    await logAdminAction({
+      req,
+      actor: auth.user,
+      action: "admin_post_updated",
+      targetType: "post",
+      targetId: post._id,
+      targetLabel: post.title,
+      metadata: {
+        slug: post.slug,
+        previousStatus: prevStatus,
+        status: post.status,
+        statusChanged,
+        isFlagged: Boolean(post.isFlagged),
+      },
+    });
+
     return NextResponse.json({ ok: true, post: post.toObject() });
   } catch (err) {
     console.error("PATCH /api/admin/posts/[id]:", err);
@@ -86,7 +105,7 @@ export async function PATCH(req, { params }) {
   }
 }
 
-export async function DELETE(_req, { params }) {
+export async function DELETE(req, { params }) {
   try {
     const auth = await requireAdmin();
     if (!auth.ok) return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
@@ -106,6 +125,16 @@ export async function DELETE(_req, { params }) {
     if (!deleted) {
       return NextResponse.json({ ok: false, error: "Post not found" }, { status: 404 });
     }
+
+    await logAdminAction({
+      req,
+      actor: auth.user,
+      action: "admin_post_deleted",
+      targetType: "post",
+      targetId: deleted._id,
+      targetLabel: deleted.title || "",
+      metadata: { slug: deleted.slug || "", status: deleted.status || "" },
+    });
 
     return NextResponse.json({ ok: true });
   } catch (err) {

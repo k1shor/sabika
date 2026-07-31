@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import cloudinary from "@/lib/cloudinary";
-import { requireApprovedWriter } from "@/lib/auth";
 import { requireUser } from "@/lib/auth";
+import { checkRateLimit, rateLimitResponse } from "@/lib/rateLimit";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -58,6 +58,9 @@ async function uploadBuffer(buffer, filename) {
 }
 
 export async function POST(req) {
+  const limit = checkRateLimit(req, { name: "upload-image", limit: 30, windowMs: 10 * 60 * 1000 });
+  if (!limit.ok) return rateLimitResponse(limit);
+
   const auth = await requireUser();
 if (!auth.ok) return NextResponse.json({ ok: false, error: "Login required" }, { status: 401 });
 
@@ -86,7 +89,15 @@ if (auth.user.role !== "admin" &&
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
 
-  const filename = String(file.name || "image").replace(/[^\w.\-]+/g, "-").slice(0, 120);
+  const EXTENSION_MAP = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+    "image/gif": ".gif"
+  };
+  const baseName = String(file.name || "image").replace(/\.[^/.]+$/, "").replace(/[^\w\-]+/g, "-").slice(0, 100);
+  const safeExtension = EXTENSION_MAP[file.type] || ".jpg";
+  const filename = `${baseName}${safeExtension}`;
 
   try {
     if (!hasCloudinaryConfig()) {

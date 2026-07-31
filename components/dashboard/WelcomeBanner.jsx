@@ -21,9 +21,15 @@ export default function WelcomeBanner({ user }) {
           <Link href="/blogs" className="rounded-xl bg-[#E35D6A] px-5 py-2 text-sm font-bold text-white hover:bg-[#d14c59]">
             Browse Articles
           </Link>
-          <Link href="/writers/posts" className="rounded-xl border border-slate-300 px-5 py-2 text-sm font-bold text-slate-700 hover:bg-white/60 dark:border-blue-400/30 dark:text-blue-100 dark:hover:bg-blue-950/40">
-            Write new post
-          </Link>
+          {user?.role === "admin" || (user?.role === "blog_writer" && user?.writerVerification?.status === "approved") ? (
+            <Link href="/writers/posts" className="rounded-xl border border-slate-300 px-5 py-2 text-sm font-bold text-slate-700 hover:bg-white/60 dark:border-blue-400/30 dark:text-blue-100 dark:hover:bg-blue-950/40">
+              Write new post
+            </Link>
+          ) : (
+            <Link href="/apply-writer" className="rounded-xl border border-slate-300 px-5 py-2 text-sm font-bold text-slate-700 hover:bg-white/60 dark:border-blue-400/30 dark:text-blue-100 dark:hover:bg-blue-950/40">
+              Become a Contributor
+            </Link>
+          )}
         </div>
       </div>
     </motion.div>

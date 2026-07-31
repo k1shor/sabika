@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { dbConnect } from "@/lib/db";
 import { User } from "@/models/User";
 import { getAuthUser } from "@/lib/auth";
+import { logAdminAction } from "@/lib/audit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,6 +16,10 @@ export async function PATCH(req, { params }) {
     }
 
     const { id } = await params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json({ ok: false, error: "Invalid user id." }, { status: 400 });
+    }
+
     const body    = await req.json().catch(() => null);
     const action  = body?.action; // "approve" or "reject"
 
@@ -39,6 +45,16 @@ export async function PATCH(req, { params }) {
     if (!user) {
       return NextResponse.json({ ok: false, error: "User not found." }, { status: 404 });
     }
+
+    await logAdminAction({
+      req,
+      actor: authUser,
+      action: action === "approve" ? "writer_application_approved" : "writer_application_rejected",
+      targetType: "writer_application",
+      targetId: user._id,
+      targetLabel: user.email || user.name || "",
+      metadata: { status: user.writerVerification?.status || "", legacyEndpoint: true },
+    });
 
     return NextResponse.json({ ok: true, status: user.writerVerification.status });
   } catch (err) {

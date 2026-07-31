@@ -13,7 +13,7 @@ export default function DashboardSidebar({ user, savedCount, recentlyViewed }) {
     { href: "/following", label: "Writers I Follow" },
     { href: "/notifications", label: "Notifications" },
     { href: "/saved", label: "Saved Posts" },
-    ...(user?.writerVerification?.status === "none" || !user?.writerVerification
+    ...(user?.role !== "admin" && (user?.writerVerification?.status === "none" || !user?.writerVerification)
       ? [{ href: "/apply-writer", label: "Become a Writer" }]
       : []),
   ];

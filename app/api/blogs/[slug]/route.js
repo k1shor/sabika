@@ -56,7 +56,7 @@ export async function GET(req, { params }) {
     return NextResponse.json({ ok: true, post: { ...post, _id: String(post._id) } });
   }
 
-  const post = await Post.findOne({ slug: decodedSlug, status: "approved" })
+  const post = await Post.findOne({ slug: decodedSlug })
     .populate("authorId", "name avatarUrl badge username bio")
     .lean();
 
@@ -65,6 +65,18 @@ export async function GET(req, { params }) {
       { ok: false, error: "Not found" },
       { status: 404 }
     );
+  }
+
+  if (post.status !== "approved") {
+    const user = await getAuthUser();
+    const isAuthor = user && String(post.authorId?._id || post.authorId) === String(user.id);
+    const isAdmin = user && user.role === "admin";
+    if (!isAuthor && !isAdmin) {
+      return NextResponse.json(
+        { ok: false, error: "Not found" },
+        { status: 404 }
+      );
+    }
   }
 
   await Post.updateOne(

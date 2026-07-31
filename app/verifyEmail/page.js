@@ -58,7 +58,7 @@ function VerifyEmailContent() {
             message: data?.error || "Email verification failed.",
           });
         }
-      } catch (error) {
+      } catch {
         setState({
           status: "error",
           message: "Email verification failed.",
@@ -107,7 +107,7 @@ function VerifyEmailContent() {
           message: data?.error || "Failed to resend email.",
         });
       }
-    } catch (error) {
+    } catch {
       setResendState({
         status: "error",
         message: "Failed to resend email.",

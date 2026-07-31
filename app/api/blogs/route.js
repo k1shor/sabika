@@ -2,10 +2,7 @@ import { NextResponse } from "next/server";
 import { DUMMY_POSTS } from "@/lib/dummy";
 import { dbConnect, isDbEnabled } from "@/lib/db";
 import { Post } from "@/models/Post";
-import { getAuthUser, requireApprovedWriter } from "@/lib/auth";
-import { PostCreateSchema } from "@/lib/validators";
-import { Follow } from "@/models/Follow";
-import { Notification } from "@/models/Notification";
+import { getAuthUser } from "@/lib/auth";
 
 export async function GET(req) {
   if (!isDbEnabled()) {

@@ -17,8 +17,7 @@ export function getWriterPermissions(user) {
     verificationStatus !== "pending" &&
     verificationStatus !== "approved";
   const canWritePosts =
-    isAdmin ||
-    (user?.role === "blog_writer" && verificationStatus === "approved");
+    user?.role === "blog_writer" && verificationStatus === "approved";
 
   return { isAdmin, canApplyAsWriter, canWritePosts };
 }

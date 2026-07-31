@@ -4,6 +4,7 @@ import { dbConnect, isDbEnabled } from "@/lib/db";
 import { User } from "@/models/User";
 import { generateRawToken, hashToken, tokenExpiry, TOKEN_TTL_MS } from "@/lib/tokens";
 import { sendVerificationEmail } from "@/lib/email";
+import { checkRateLimit, rateLimitResponse } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,6 +14,9 @@ const Schema = z.object({
 });
 
 export async function POST(req) {
+  const limit = checkRateLimit(req, { name: "auth-resend-verification", limit: 3, windowMs: 10 * 60 * 1000 });
+  if (!limit.ok) return rateLimitResponse(limit);
+
   const body   = await req.json().catch(() => null);
   const parsed = Schema.safeParse(body);
 

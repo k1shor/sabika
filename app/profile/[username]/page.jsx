@@ -1,90 +1,101 @@
 import { notFound } from "next/navigation";
-import { headers } from "next/headers";
+import Container from "@/components/Container";
+import FollowWriterButton from "@/components/FollowWriterButton";
+import { dbConnect } from "@/lib/db";
+import { getAuthUser } from "@/lib/auth";
+import { User } from "@/models/User";
+import { Post } from "@/models/Post";
+import { Follow } from "@/models/Follow";
+import PublicProfileView from "@/components/profile/PublicProfileView";
 
-const BADGE_LABELS = {
-  nursing_student: "Nursing Student",
-  registered_nurse: "Registered Nurse",
-  abroad_nurse: "Nurse Abroad",
-  mentor: "Mentor",
-};
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-async function getProfile(username) {
-  const h = await headers();
-  const host = h.get("host");
-  const protocol = process.env.NODE_ENV === "development" ? "http" : "https";
+function serializePost(post) {
+  return {
+    _id: String(post._id),
+    title: post.title,
+    slug: post.slug,
+    excerpt: post.excerpt || "",
+    publishedAt:
+      post.publishedAt instanceof Date
+        ? post.publishedAt.toISOString()
+        : post.publishedAt,
+  };
+}
 
-  const res = await fetch(`${protocol}://${host}/api/profile/${username}`, {
-    cache: "no-store",
-  });
-
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error("Failed to load profile");
-
-  const data = await res.json();
-  return data.user;
+export async function generateMetadata({ params }) {
+  const { username } = await params;
+  return {
+    title: `${username} - Profile`,
+    description: `View ${username}'s profile on Nursing Nepal.`,
+  };
 }
 
 export default async function PublicProfilePage({ params }) {
   const { username } = await params;
-  const user = await getProfile(username);
 
-  if (!user) notFound();
+  await dbConnect();
+
+  const writer = await User.findOne({ username }).lean();
+
+  if (!writer) {
+    notFound();
+  }
+
+  const authUser = await getAuthUser();
+  const isLoggedIn = Boolean(authUser?.id);
+  const isOwner = isLoggedIn && String(authUser.id) === String(writer._id);
+
+  let posts = [];
+  let followerCount = 0;
+  let existingFollow = null;
+
+  if (writer.role === "blog_writer" && writer.writerVerification?.status === "approved") {
+    const [fetchedPosts, followers, followDoc] = await Promise.all([
+      Post.find({ authorId: writer._id, status: "approved" }).sort({ publishedAt: -1 }).lean(),
+      Follow.countDocuments({ writerId: writer._id }),
+      isLoggedIn ? Follow.findOne({ followerId: authUser.id, writerId: writer._id }).lean() : null,
+    ]);
+    posts = fetchedPosts.map(serializePost);
+    followerCount = followers;
+    existingFollow = followDoc;
+  }
+
+  // Build a safe payload — only send private fields to the client when logged in.
+  const writerPayload = {
+    _id: String(writer._id),
+    name: writer.name || "",
+    username: writer.username || null,
+    badge: writer.badge || "",
+    role: writer.role || "visitor",
+    // Locked fields for logged-out visitors:
+    bio: isLoggedIn ? (writer.bio || "") : null,
+    avatarUrl: isLoggedIn ? (writer.avatarUrl || "") : null,
+    twitter: isLoggedIn ? (writer.twitter || "") : null,
+    website: isLoggedIn ? (writer.website || "") : null,
+  };
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10">
-      <div className="flex items-center gap-4">
-        <div className="h-20 w-20 overflow-hidden rounded-full bg-slate-100 dark:bg-blue-950/30">
-          {user.avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={user.avatarUrl} alt={user.name} className="h-full w-full object-cover" />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-xl font-bold text-slate-400">
-              {user.name?.[0]?.toUpperCase() || "?"}
-            </div>
-          )}
-        </div>
-        <div>
-          <h1 className="text-xl font-extrabold text-slate-900 dark:text-white">{user.name}</h1>
-          <p className="text-sm text-slate-500 dark:text-blue-100/50">@{user.username}</p>
-          {user.badge && (
-            <span className="mt-1 inline-block rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-              {BADGE_LABELS[user.badge] || user.badge}
-            </span>
-          )}
-        </div>
+    <Container>
+      <div className="py-6">
+        <PublicProfileView
+          writer={writerPayload}
+          posts={posts}
+          followerCount={isLoggedIn ? followerCount : null}
+          isLoggedIn={isLoggedIn}
+          isOwner={isOwner}
+          followButton={
+            isLoggedIn && writer.role === "blog_writer" && writer.writerVerification?.status === "approved" ? (
+              <FollowWriterButton
+                writerId={String(writer._id)}
+                initialFollowing={Boolean(existingFollow)}
+                initialFollowerCount={followerCount}
+              />
+            ) : null
+          }
+        />
       </div>
-
-      {user.bio && (
-        <p className="mt-4 text-sm text-slate-700 dark:text-blue-100/80">{user.bio}</p>
-      )}
-
-      <div className="mt-4 flex gap-4 text-sm text-slate-500 dark:text-blue-100/50">
-        {user.twitter && (
-          <a href={`https://twitter.com/${user.twitter.replace("@", "")}`} target="_blank" rel="noreferrer" className="hover:underline">
-            Twitter
-          </a>
-        )}
-        {user.website && (
-          <a href={user.website} target="_blank" rel="noreferrer" className="hover:underline">
-            Website
-          </a>
-        )}
-      </div>
-
-      <div className="mt-6 flex gap-6 border-t border-slate-200 pt-4 text-sm dark:border-blue-400/10">
-        <div>
-          <span className="font-bold text-slate-900 dark:text-white">{user.stats.totalBlogs}</span>{" "}
-          <span className="text-slate-500 dark:text-blue-100/50">Blogs</span>
-        </div>
-        <div>
-          <span className="font-bold text-slate-900 dark:text-white">{user.stats.totalFollowers}</span>{" "}
-          <span className="text-slate-500 dark:text-blue-100/50">Followers</span>
-        </div>
-        <div>
-          <span className="font-bold text-slate-900 dark:text-white">{user.stats.totalFollowing}</span>{" "}
-          <span className="text-slate-500 dark:text-blue-100/50">Following</span>
-        </div>
-      </div>
-    </div>
+    </Container>
   );
 }

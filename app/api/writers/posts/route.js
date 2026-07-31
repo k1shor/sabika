@@ -7,6 +7,7 @@ import { Post } from "@/models/Post";
 import { Follow } from "@/models/Follow";
 import { Notification } from "@/models/Notification";
 import { User } from "@/models/User";
+import { checkRateLimit, rateLimitResponse } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -43,14 +44,14 @@ function optionalString(schema) {
   }, schema.optional());
 }
 
-const OptionalUrlSchema = optionalString(z.string().url());
+const OptionalUrlSchema = optionalString(z.string().refine(val => val.startsWith('http') || val.startsWith('/'), "Must be a valid URL or local path"));
 
 const WriterPostSchema = z.object({
   title:       z.string().trim().min(3, "Title must be at least 3 characters").max(160, "Title is too long"),
   slug:        optionalString(z.string().min(3).max(200)),
   excerpt:     z.string().trim().min(10, "Excerpt must be at least 10 characters").max(400, "Excerpt is too long"),
   coverImage:  OptionalUrlSchema,
-  images:      z.array(z.string().url()).optional(),
+  images:      z.array(z.string().refine(val => val.startsWith('http') || val.startsWith('/'), "Must be a valid URL or local path")).optional(),
   contentHtml: z.string().trim().min(10, "Post content is required"),
   tags:        z.array(z.string().trim().max(40)).min(0).optional().default([]),
   readTime:    optionalString(z.string().max(30)),
@@ -122,6 +123,9 @@ export async function GET() {
 }
 
 export async function POST(req) {
+  const limit = checkRateLimit(req, { name: "writer-post-create", limit: 10, windowMs: 10 * 60 * 1000 });
+  if (!limit.ok) return rateLimitResponse(limit);
+
   const auth = await requireApprovedWriter();
 
   if (!auth.ok) {

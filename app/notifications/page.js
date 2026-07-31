@@ -19,7 +19,7 @@ function formatDate(value) {
 function notificationHref(item) {
   switch (item.type) {
     case "post_pending_review":
-      return "/admin/posts";
+      return "/admin/posts?tab=community&status=pending";
     case "writer_application":
       return "/admin/writer-applications";
     case "post_rejected":
@@ -61,7 +61,6 @@ export default function NotificationsPage() {
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, []);
 

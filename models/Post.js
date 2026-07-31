@@ -15,7 +15,7 @@ const PostSchema = new mongoose.Schema(
     // Author
     authorId:       { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     isAnonymous:    { type: Boolean, default: false },
-    isOfficialPost: { type: Boolean, default: false }, // ✅ admin posts show as "Nursing Nepal"
+    isOfficialPost: { type: Boolean, default: false }, // admin posts show as "Nursing Nepal"
 
     // Categorization
     category: {

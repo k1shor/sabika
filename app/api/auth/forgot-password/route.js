@@ -4,6 +4,7 @@ import { dbConnect, isDbEnabled } from "@/lib/db";
 import { User } from "@/models/User";
 import { generateRawToken, hashToken, tokenExpiry } from "@/lib/tokens";
 import { sendPasswordResetEmail } from "@/lib/email";
+import { checkRateLimit, rateLimitResponse } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,6 +21,9 @@ function genericResponse() {
 }
 
 export async function POST(req) {
+  const limit = checkRateLimit(req, { name: "auth-forgot-password", limit: 5, windowMs: 60 * 60 * 1000 });
+  if (!limit.ok) return rateLimitResponse(limit);
+
   const body = await req.json().catch(() => null);
   const parsed = ForgotPasswordSchema.safeParse(body);
 

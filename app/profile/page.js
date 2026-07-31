@@ -33,15 +33,7 @@ export default function ProfilePage() {
     );
   }
 
-  if (!user) {
-    return (
-      <Container>
-        <div className="flex items-center justify-center py-24 text-sm text-slate-500 dark:text-blue-100/50">
-          You must be logged in to view this page.
-        </div>
-      </Container>
-    );
-  }
+  if (!user) return null;
 
   const tabs = TABS_BY_ROLE[user.role] || TABS_BY_ROLE.visitor;
   const currentTab = tabs.includes(activeTab) ? activeTab : tabs[0];

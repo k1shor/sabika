@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Button from "@/components/Button";
 import Input from "@/components/Input";
 import { getRoleLabel } from "./profileUtils";
+import PublicProfileView from "./PublicProfileView";
 
 export default function ProfileTab({ user, onUserUpdate }) {
   const [name, setName] = useState(user?.name || "");
@@ -14,6 +15,7 @@ export default function ProfileTab({ user, onUserUpdate }) {
   const [website, setWebsite] = useState(user?.website || "");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ text: "", ok: true });
+  const [showPreview, setShowPreview] = useState(false);
 
   // user often arrives asynchronously (fetched by the parent after mount),
   // so the useState initial values above can run before user is populated.
@@ -31,6 +33,7 @@ export default function ProfileTab({ user, onUserUpdate }) {
   const handleSave = async () => {
     setSaving(true);
     setMessage({ text: "", ok: true });
+    setShowPreview(false); // Hide preview while saving
     try {
       const res = await fetch("/api/profile", {
         method: "PATCH",
@@ -39,8 +42,9 @@ export default function ProfileTab({ user, onUserUpdate }) {
       });
       const data = await res.json();
       if (data.ok) {
-        setMessage({ text: "Saved successfully!", ok: true });
+        setMessage({ text: "Saved successfully! Scroll down to see your profile preview.", ok: true });
         onUserUpdate?.({ ...user, name, username, bio, twitter, phone, website });
+        setShowPreview(true); // Show preview after saving
       } else {
         setMessage({ text: data.error || "Failed to save.", ok: false });
       }
@@ -66,6 +70,33 @@ export default function ProfileTab({ user, onUserUpdate }) {
       alert("Something went wrong");
     }
   };
+
+  const previewWriterData = {
+    _id: user?._id || "preview-id",
+    name: name,
+    username: username,
+    bio: bio,
+    twitter: twitter,
+    website: website,
+    role: user?.role || "visitor",
+    badge: user?.badge || "",
+    avatarUrl: user?.avatarUrl || "",
+  };
+
+  const previewPosts = [
+    {
+      _id: "mock1",
+      title: "My First Nursing Article",
+      slug: "my-first-nursing-article",
+      excerpt: "This is a preview of how your beautifully structured articles will appear on your profile.",
+    },
+    {
+      _id: "mock2",
+      title: "Clinical Experience Guidelines",
+      slug: "clinical-experience-guidelines",
+      excerpt: "Another example of a published blog. Visitors can click these to read your work.",
+    }
+  ];
 
   return (
     <div className="grid gap-6">
@@ -152,7 +183,26 @@ export default function ProfileTab({ user, onUserUpdate }) {
         </Button>
       </div>
 
-      <div className="rounded-2xl border border-red-200 bg-red-50/60 p-4 dark:border-red-400/20 dark:bg-red-950/20">
+      {showPreview && (
+        <div className="mt-8 border-t border-slate-200 pt-8 dark:border-blue-400/20">
+          <h2 className="mb-4 text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">Live Profile Preview</h2>
+          <p className="mb-6 text-sm font-semibold text-slate-500 dark:text-blue-100/60">
+            This is exactly how your profile looks to other users when they visit your page.
+          </p>
+          <div className="-mx-4 sm:mx-0">
+            <PublicProfileView 
+              writer={previewWriterData}
+              posts={user?.role === "blog_writer" ? previewPosts : []}
+              followerCount={42}
+              isLoggedIn={true}
+              isOwner={true}
+              isPreview={true}
+            />
+          </div>
+        </div>
+      )}
+
+      <div className="mt-8 rounded-2xl border border-red-200 bg-red-50/60 p-4 dark:border-red-400/20 dark:bg-red-950/20">
         <p className="text-sm font-extrabold text-red-700 dark:text-red-300">Danger zone</p>
         <p className="mt-1 text-sm text-red-600/80 dark:text-red-400/70">
           Deleting your account is permanent and cannot be undone.

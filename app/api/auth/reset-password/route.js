@@ -4,6 +4,7 @@ import crypto from "crypto";
 import { z } from "zod";
 import { dbConnect, isDbEnabled } from "@/lib/db";
 import { User } from "@/models/User";
+import { checkRateLimit, rateLimitResponse } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -36,6 +37,9 @@ function hashToken(token) {
 }
 
 export async function POST(req) {
+  const limit = checkRateLimit(req, { name: "auth-reset-password", limit: 10, windowMs: 15 * 60 * 1000 });
+  if (!limit.ok) return rateLimitResponse(limit);
+
   const body = await req.json().catch(() => null);
   const parsed = ResetPasswordSchema.safeParse(body);
 
@@ -113,8 +117,6 @@ export async function POST(req) {
   user.passwordHash = await bcrypt.hash(parsed.data.password, 12);
   user.passwordResetTokenHash = undefined;
   user.passwordResetExpiresAt = undefined;
-  // user.forgotPasswordToken = undefined;
-  // user.forgotPasswordTokenExpiry = undefined;
   await user.save();
 
   return NextResponse.json({
