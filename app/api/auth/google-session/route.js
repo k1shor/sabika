@@ -3,43 +3,70 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { dbConnect } from "@/lib/db";
 import { User } from "@/models/User";
-import { signToken } from "@/lib/auth";
-
-const PUBLIC_ROLES = ["visitor", "blog_writer"];
+import { signToken, normalizeRole } from "@/lib/auth";
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
-  const requestedRole = searchParams.get("role");
-  const role = PUBLIC_ROLES.includes(requestedRole) ? requestedRole : "visitor";
+  const action = searchParams.get("action"); // "signup" | "login"
 
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.email) {
-    return NextResponse.redirect(new URL("/login?error=google", req.url));
+    const dest = action === "signup" ? "/register" : "/login";
+    return NextResponse.redirect(new URL(`${dest}?error=google`, req.url));
   }
 
   await dbConnect();
 
   const email = session.user.email.toLowerCase();
-  let user = await User.findOne({ email });
+  const user = await User.findOne({ email });
 
-  if (!user) {
-    user = await User.create({
+  // ── SIGNUP FLOW ──
+  if (action === "signup") {
+    if (user) {
+      return NextResponse.redirect(
+        new URL("/register?error=google_exists", req.url)
+      );
+    }
+
+    // Every Google signup starts as "visitor" — role can never be
+    // self-selected via query param. Becoming a blog_writer requires
+    // going through the writer-application + admin-approval flow.
+    const newUser = await User.create({
       name: session.user.name || "Google User",
       email,
       passwordHash: "",
       provider: "google",
-      role,
+      role: "visitor",
       isVerified: true,
       writerVerification: { status: "none" },
     });
+
+    return buildTokenResponse(newUser, req);
   }
 
-  const finalRole = user.isAdmin
-    ? "admin"
-    : ["visitor", "blog_writer", "admin"].includes(user.role)
-      ? user.role
-      : "visitor";
+  // ── LOGIN FLOW ──
+  if (action === "login") {
+    if (!user) {
+      return NextResponse.redirect(
+        new URL("/login?error=google_not_found", req.url)
+      );
+    }
+
+    if (user.isBanned) {
+      return NextResponse.redirect(
+        new URL("/login?error=account_disabled", req.url)
+      );
+    }
+
+    return buildTokenResponse(user, req);
+  }
+
+  return NextResponse.redirect(new URL("/login?error=google", req.url));
+}
+
+function buildTokenResponse(user, req) {
+  const finalRole = normalizeRole(user);
 
   const token = signToken({
     id: user._id,

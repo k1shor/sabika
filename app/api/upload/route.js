@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
 import cloudinary from "@/lib/cloudinary";
-import { requireAdmin } from "@/lib/auth";
-
+import { requireUser } from "@/lib/auth";
+import { checkRateLimit, rateLimitResponse } from "@/lib/rateLimit";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -13,6 +15,25 @@ function ensureCloudinary() {
   if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
     throw new Error("Cloudinary env vars missing");
   }
+}
+
+function hasCloudinaryConfig() {
+  return Boolean(
+    process.env.CLOUDINARY_CLOUD_NAME &&
+      process.env.CLOUDINARY_API_KEY &&
+      process.env.CLOUDINARY_API_SECRET
+  );
+}
+
+async function saveLocalImage(buffer, filename) {
+  const uploadDir = path.join(process.cwd(), "public", "uploads", "blogs");
+  await mkdir(uploadDir, { recursive: true });
+
+  const safeName = `${Date.now()}-${filename}`;
+  const filePath = path.join(uploadDir, safeName);
+  await writeFile(filePath, buffer);
+
+  return `/uploads/blogs/${safeName}`;
 }
 
 async function uploadBuffer(buffer, filename) {
@@ -37,14 +58,17 @@ async function uploadBuffer(buffer, filename) {
 }
 
 export async function POST(req) {
-  const auth = await requireAdmin();
-  if (!auth.ok) return NextResponse.json({ ok: false, error: auth.error || "Forbidden" }, { status: 403 });
+  const limit = checkRateLimit(req, { name: "upload-image", limit: 30, windowMs: 10 * 60 * 1000 });
+  if (!limit.ok) return rateLimitResponse(limit);
 
-  try {
-    ensureCloudinary();
-  } catch (e) {
-    return NextResponse.json({ ok: false, error: e.message || "Upload not configured" }, { status: 400 });
-  }
+  const auth = await requireUser();
+if (!auth.ok) return NextResponse.json({ ok: false, error: "Login required" }, { status: 401 });
+
+if (auth.user.role !== "admin" && 
+    (auth.user.role !== "blog_writer" || auth.user.writerVerification?.status !== "approved")) {
+  return NextResponse.json({ ok: false, error: "Writer approval required" }, { status: 403 });
+}
+  // if (!auth.ok) return NextResponse.json({ ok: false, error: auth.error || "Forbidden" }, { status: 403 });
 
   const form = await req.formData().catch(() => null);
   if (!form) return NextResponse.json({ ok: false, error: "Invalid form data" }, { status: 400 });
@@ -65,9 +89,27 @@ export async function POST(req) {
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
 
-  const filename = String(file.name || "image").replace(/[^\w.\-]+/g, "-").slice(0, 120);
+  const EXTENSION_MAP = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+    "image/gif": ".gif"
+  };
+  const baseName = String(file.name || "image").replace(/\.[^/.]+$/, "").replace(/[^\w\-]+/g, "-").slice(0, 100);
+  const safeExtension = EXTENSION_MAP[file.type] || ".jpg";
+  const filename = `${baseName}${safeExtension}`;
 
   try {
+    if (!hasCloudinaryConfig()) {
+      const url = await saveLocalImage(buffer, filename);
+      return NextResponse.json({
+        ok: true,
+        url,
+        storage: "local",
+      });
+    }
+
+    ensureCloudinary();
     const result = await uploadBuffer(buffer, filename);
     return NextResponse.json({
       ok: true,

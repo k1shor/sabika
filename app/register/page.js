@@ -12,7 +12,6 @@ export default function RegisterPage() {
   const [err, setErr] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
   const [ok, setOk] = useState(null); // { highlight, message }
-  const [role, setRole] = useState("visitor");
   const [googleLoading, setGoogleLoading] = useState(false);
 
   const submit = async (e) => {
@@ -27,7 +26,6 @@ export default function RegisterPage() {
       name: String(form.get("name") || ""),
       email: String(form.get("email") || ""),
       password: String(form.get("password") || ""),
-      role: String(form.get("role") || "visitor"),
     };
 
     const res = await fetch("/api/auth/register", {
@@ -42,16 +40,21 @@ export default function RegisterPage() {
     if (data?.ok) {
       setOk({ highlight: data.highlight, message: data.message });
       e.target.reset();
-      setRole("visitor");
     } else {
       setErr(data?.error || "Registration failed.");
       setFieldErrors(data?.fields || {});
     }
   };
 
+  const sp = typeof window !== "undefined"
+    ? new URLSearchParams(window.location.search)
+    : null;
+  const googleError = sp?.get("error");
+
   const handleGoogle = async () => {
+    setGoogleLoading(true);
     await signIn("google", {
-      callbackUrl: `/api/auth/google-session?role=${role}`,
+      callbackUrl: `/api/auth/google-session?action=signup`,
     });
   };
 
@@ -78,7 +81,7 @@ export default function RegisterPage() {
                 placeholder="e.g. John Doe"
                 required
                 onBlur={(e) => {
-                  const parts = e.target.value.trim().split(/\s+/);
+                  const parts = e.target.value.trim().split(/\\s+/);
                   if (parts.length < 2 || parts[1] === "") {
                     e.target.setCustomValidity("Please enter your full name (first and last name)");
                     e.target.reportValidity();
@@ -145,24 +148,6 @@ export default function RegisterPage() {
             )}
           </div>
 
-          {/* ── Role ── */}
-          <div>
-            <label className="text-sm font-semibold text-slate-700 dark:text-blue-100/80">
-              Account type
-            </label>
-            <select
-              name="role"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="mt-2 w-full rounded-xl border border-slate-200 bg-white/80 px-3 py-2.5 text-sm font-semibold text-slate-800 outline-none
-              focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15
-              dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-white"
-            >
-              <option value="visitor">Visitor</option>
-              <option value="blog_writer">Blog Writer</option>
-            </select>
-          </div>
-
           {/* ── Error ── */}
           {err && (
             <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700
@@ -198,26 +183,11 @@ export default function RegisterPage() {
             <div className="h-px flex-1 bg-slate-200 dark:bg-blue-400/20" />
           </div>
 
-          {/* ── Role notice for Google ── */}
-          <div className={`rounded-2xl border px-4 py-3 text-xs font-semibold flex items-center gap-2
-            ${role === "blog_writer"
-              ? "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-blue-300"
-              : "border-slate-200 bg-slate-50 text-slate-600 dark:border-blue-400/10 dark:bg-blue-950/20 dark:text-blue-100/60"
-            }`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-              <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
-            Signing in with Google will register you as a{" "}
-            <span className="font-extrabold">
-              {role === "blog_writer" ? "Blog Writer" : "Visitor"}
-            </span>.
-            {role === "visitor" && (
-              <span className="ml-1 text-slate-400 dark:text-blue-100/40">
-                (Change above to switch role)
-              </span>
-            )}
-          </div>
+          {googleError === "google_exists" && (
+            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 dark:border-red-400/25 dark:bg-red-950/30 dark:text-red-300">
+              An account with this Google email already exists. Please log in instead.
+            </div>
+          )}
 
           {/* ── Google button ── */}
           <button
@@ -234,7 +204,7 @@ export default function RegisterPage() {
               <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
               <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
             </svg>
-            {googleLoading ? "Redirecting..." : `Continue with Google as ${role === "blog_writer" ? "Blog Writer" : "Visitor"}`}
+            {googleLoading ? "Redirecting..." : "Signup with Google"}
           </button>
 
           {/* ── Login link ── */}

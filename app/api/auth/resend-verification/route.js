@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { dbConnect, isDbEnabled } from "@/lib/db";
 import { User } from "@/models/User";
-import { sendEmail } from "@/helpers/mailer";
+import { generateRawToken, hashToken, tokenExpiry, TOKEN_TTL_MS } from "@/lib/tokens";
+import { sendVerificationEmail } from "@/lib/email";
+import { checkRateLimit, rateLimitResponse } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,6 +14,9 @@ const Schema = z.object({
 });
 
 export async function POST(req) {
+  const limit = checkRateLimit(req, { name: "auth-resend-verification", limit: 3, windowMs: 10 * 60 * 1000 });
+  if (!limit.ok) return rateLimitResponse(limit);
+
   const body   = await req.json().catch(() => null);
   const parsed = Schema.safeParse(body);
 
@@ -28,7 +33,6 @@ export async function POST(req) {
   const email = parsed.data.email.trim().toLowerCase();
   const user  = await User.findOne({ email });
 
-  // 1. No account found
   if (!user) {
     return NextResponse.json(
       { ok: false, error: "No account found with that email." },
@@ -36,7 +40,6 @@ export async function POST(req) {
     );
   }
 
-  // 2. Already verified
   if (user.isVerified) {
     return NextResponse.json(
       { ok: false, error: "This email is already verified. You can login." },
@@ -44,10 +47,19 @@ export async function POST(req) {
     );
   }
 
-  // 3. Rate limit — only allow resend if last email was sent more than 2 minutes ago
-  // verifyTokenExpiry = sentAt + 1 hour, so sentAt = verifyTokenExpiry - 3600000
+  if (user.isBanned) {
+    return NextResponse.json(
+      { ok: false, error: "This account has been suspended." },
+      { status: 403 }
+    );
+  }
+
+  // Rate limit — only allow resend if the last token was issued more than
+  // 2 minutes ago. verifyTokenExpiry = sentAt + TOKEN_TTL_MS, so we back
+  // out sentAt from it (JS-side arithmetic, unaffected by how Mongo
+  // stores/queries the field).
   if (user.verifyTokenExpiry) {
-    const sentAt     = new Date(user.verifyTokenExpiry).getTime() - 60 * 60 * 1000;
+    const sentAt     = new Date(user.verifyTokenExpiry).getTime() - TOKEN_TTL_MS;
     const twoMinutes = 2 * 60 * 1000;
 
     if (Date.now() - sentAt < twoMinutes) {
@@ -58,9 +70,14 @@ export async function POST(req) {
     }
   }
 
-  // 4. All good — send fresh verification email
   try {
-    await sendEmail({ email: user.email, emailType: "VERIFY", userId: user._id });
+    const rawToken = generateRawToken();
+    user.verifyToken = hashToken(rawToken);
+    user.verifyTokenExpiry = tokenExpiry();
+    await user.save();
+
+    const verifyUrl = `${process.env.DOMAIN}/verifyEmail?token=${rawToken}&email=${encodeURIComponent(user.email)}`;
+    await sendVerificationEmail({ to: user.email, verifyUrl });
   } catch {
     return NextResponse.json(
       { ok: false, error: "Failed to send email. Please try again." },

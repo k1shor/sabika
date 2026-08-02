@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import crypto from "crypto";
-import { dbConnect } from "@/lib/db";
+import { dbConnect, isDbEnabled } from "@/lib/db";
 import { User } from "@/models/User";
+import { hashToken } from "@/lib/tokens";
 
 export async function POST(req) {
   try {
@@ -14,17 +14,20 @@ export async function POST(req) {
         { status: 400 }
       );
     }
+    if (!isDbEnabled()) {
+      return NextResponse.json(
+        { ok: false, error: "Service unavailable." },
+        { status: 503 }
+      );
+    }
 
-    const hashedToken = crypto
-      .createHash("sha256")
-      .update(token)
-      .digest("hex");
+    const hashedToken = hashToken(token);
 
     await dbConnect();
 
     const user = await User.findOne({
       verifyToken: hashedToken,
-      verifyTokenExpiry: { $gt: Date.now() },
+      verifyTokenExpiry: { $gt: new Date() },
     });
 
     if (!user) {
@@ -38,6 +41,12 @@ export async function POST(req) {
         ok: true,
         message: "Your email is already verified. You can login now.",
       });
+    }
+    if (user.isBanned) {
+      return NextResponse.json(
+        { ok: false, error: "This account has been suspended." },
+        { status: 403 }
+      );
     }
 
     user.isVerified = true;

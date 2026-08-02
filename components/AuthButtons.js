@@ -61,7 +61,7 @@ export default function AuthButtons() {
 
         <Link
           href="/register"
-          className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-blue-700 to-blue-500 px-4 py-2 text-sm font-extrabold text-white shadow-sm
+          className="inline-flex items-center justify-center rounded-xl bg-linear-to-r from-blue-700 to-blue-500 px-4 py-2 text-sm font-extrabold text-white shadow-sm
           hover:brightness-110 active:scale-[0.98] transition
           focus:outline-none focus:ring-4 focus:ring-blue-500/20"
         >

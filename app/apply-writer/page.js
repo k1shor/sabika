@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import Container from "@/components/Container";
 import Input from "@/components/Input";
 import Button from "@/components/Button";
@@ -8,6 +9,8 @@ import Button from "@/components/Button";
 export default function ApplyWriterPage() {
   const [category, setCategory] = useState("entrance_exam_passed");
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
+  const [status, setStatus] = useState(null);
   const [msg, setMsg] = useState(null);
   const [err, setErr] = useState(null);
 
@@ -21,6 +24,16 @@ export default function ApplyWriterPage() {
     () => ["nurse_working_nepal", "nurse_working_abroad"].includes(category),
     [category]
   );
+
+  useEffect(() => {
+    fetch("/api/auth/me", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => {
+        setStatus(data?.user?.writerVerification?.status || null);
+      })
+      .catch(() => setStatus(null))
+      .finally(() => setChecking(false));
+  }, []);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -65,6 +78,23 @@ export default function ApplyWriterPage() {
           Submit your details before creating posts.
         </p>
 
+        {!checking && status === "approved" ? (
+          <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700 dark:border-emerald-400/30 dark:bg-emerald-500/15 dark:text-emerald-200">
+            Your writer account is already approved. You can publish posts from{" "}
+            <Link href="/writers/posts" className="font-extrabold underline">
+              My Posts
+            </Link>
+            .
+          </div>
+        ) : null}
+
+        {!checking && status === "pending" ? (
+          <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 dark:border-amber-400/30 dark:bg-amber-500/15 dark:text-amber-200">
+            Your writer application is already pending. Please wait for admin approval.
+          </div>
+        ) : null}
+
+        {status === "approved" || status === "pending" ? null : (
         <form onSubmit={submit} className="mt-6 grid gap-4">
           <div>
             <label className="text-sm font-semibold text-slate-700 dark:text-blue-100/80">
@@ -74,7 +104,7 @@ export default function ApplyWriterPage() {
               name="category"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="mt-2 w-full rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15"
+              className="mt-2 w-full rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15 dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-white"
               required
             >
               <option value="entrance_exam_passed">Entrance exam-passed student</option>
@@ -122,7 +152,7 @@ export default function ApplyWriterPage() {
           </div>
 
           {err && (
-            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-400/30 dark:bg-red-500/15 dark:text-red-200">
               {err}
             </div>
           )}
@@ -137,6 +167,7 @@ export default function ApplyWriterPage() {
             {loading ? "Submitting..." : "Submit Application"}
           </Button>
         </form>
+        )}
       </div>
     </Container>
   );
