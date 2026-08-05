@@ -1,14 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
 import Container from "@/components/Container";
 import DashboardArticlesSection from "@/components/dashboard/DashboardArticlesSection";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import { DashboardLoading } from "@/components/dashboard/DashboardStates";
 import QuickStats from "@/components/dashboard/QuickStats";
 import WelcomeBanner from "@/components/dashboard/WelcomeBanner";
-import { getRecentlyViewed, stagger } from "@/components/dashboard/dashboardUtils";
+import { getRecentlyViewed } from "@/components/dashboard/dashboardUtils";
 import FollowingPanel from "@/components/following/FollowingPanel";
 import MyArticlesTab from "@/components/profile/MyArticlesTab";
 import PasswordTab from "@/components/profile/PasswordTab";
@@ -82,18 +81,22 @@ export default function DashboardWorkspace({ section = "profile" }) {
   const activeLabel = items.find((item) => item.value === activeSection)?.label || "Profile";
 
   return (
-    <Container>
-      <div className="mb-4 flex items-center justify-between gap-3">
+    <Container className="py-6">
+      <div className="mb-5 flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Dashboard</p>
-          <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">{activeLabel}</h1>
+          <p className="text-xs font-medium uppercase tracking-wider text-[#0B3C6B] dark:text-[#5B9BD5]">
+            Dashboard Workspace
+          </p>
+          <h1 className="mt-1 font-serif text-2xl md:text-3xl font-medium tracking-tight text-[#1C1B29] dark:text-[#F2F0E9]">
+            {activeLabel}
+          </h1>
         </div>
         <button
           type="button"
           onClick={() => setSidebarVisible((state) => !state)}
-          className="inline-flex items-center justify-center rounded-xl border border-blue-600 bg-blue-600 px-4 py-2 text-sm font-extrabold text-white shadow-sm shadow-blue-600/20 transition hover:bg-blue-700 dark:border-blue-400 dark:bg-blue-500 dark:text-white dark:hover:bg-blue-400"
+          className="inline-flex items-center justify-center rounded-xl bg-[#0B3C6B] px-4 py-2 text-xs font-medium text-white transition-transform duration-200 hover:scale-[1.02] dark:bg-[#5B9BD5] dark:text-[#14151A]"
         >
-          {sidebarVisible ? "Hide Sidebar" : "Show Sidebar"}
+          {sidebarVisible ? "Hide Navigation" : "Show Navigation"}
         </button>
       </div>
 
@@ -109,24 +112,24 @@ export default function DashboardWorkspace({ section = "profile" }) {
 
         <div className="min-w-0 flex-1">
           {activeSection === "profile" && (
-            <div className="rounded-3xl border border-slate-200 bg-white/70 p-6 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25">
+            <div className="rounded-2xl border border-[#EBE5DB] bg-white p-6 dark:border-[#2C2E38] dark:bg-[#1E2028]">
               <ProfileTab user={user} onUserUpdate={setUser} />
             </div>
           )}
           {activeSection === "bookmarks" && <SavedPostsPanel />}
           {activeSection === "following" && <FollowingPanel />}
           {activeSection === "articles" && (
-            <div className="rounded-3xl border border-slate-200 bg-white/70 p-6 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25">
+            <div className="rounded-2xl border border-[#EBE5DB] bg-white p-6 dark:border-[#2C2E38] dark:bg-[#1E2028]">
               <MyArticlesTab />
             </div>
           )}
           {activeSection === "password" && (
-            <div className="rounded-3xl border border-slate-200 bg-white/70 p-6 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25">
+            <div className="rounded-2xl border border-[#EBE5DB] bg-white p-6 dark:border-[#2C2E38] dark:bg-[#1E2028]">
               <PasswordTab user={user} />
             </div>
           )}
           {activeSection === "overview" && (
-            <motion.div variants={stagger} initial="hidden" animate="show" className="grid gap-6">
+            <div className="grid gap-6">
               <WelcomeBanner user={user} />
               <QuickStats role={user.role} posts={myPosts} />
 
@@ -134,7 +137,7 @@ export default function DashboardWorkspace({ section = "profile" }) {
                 <DashboardArticlesSection posts={posts} myPosts={myPosts} user={user} loading={postsLoading} />
                 <DashboardSidebar user={user} savedCount={savedCount} recentlyViewed={recentlyViewed} />
               </div>
-            </motion.div>
+            </div>
           )}
         </div>
       </div>

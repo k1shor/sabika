@@ -120,19 +120,18 @@ export default function ProfileSidebar({ user, activeTab, tabs, items, onTabChan
         )}
       </div>
 
-      <div className="rounded-3xl border border-slate-200 bg-white/70 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25 overflow-hidden">
-        <div className="px-4 py-2.5 border-b border-slate-100 dark:border-blue-400/10">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-blue-100/30">{title}</p>
+      <div className="rounded-3xl border border-[#0B3C6B]/15 bg-white/70 shadow-sm dark:border-[#5B9BD5]/20 dark:bg-[#14161D] overflow-hidden">
+        <div className="px-4 py-2.5 border-b border-[#0B3C6B]/10 dark:border-[#5B9BD5]/10">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[#0B3C6B]/50 dark:text-[#5B9BD5]/40">{title}</p>
         </div>
         <nav className="p-2 flex flex-col gap-0.5">
           {navItems.map((item) => {
             const tab = item.label;
             const isActive = activeTab === (item.value || tab);
-            const itemClass = `w-full flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-left transition ${
-              isActive
-                ? "bg-blue-600 text-white shadow-sm"
-                : "text-slate-600 hover:bg-slate-100 dark:text-blue-100/70 dark:hover:bg-blue-950/40"
-            }`;
+            const itemClass = `w-full flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-left transition ${isActive
+                ? "bg-[#0B3C6B] text-white! shadow-sm dark:bg-[#5B9BD5] dark:text-[#14151A]"
+                : "text-[#0B3C6B]/70 hover:bg-[#0B3C6B]/5 dark:text-[#5B9BD5]/70 dark:hover:bg-[#5B9BD5]/10"
+              }`;
 
             if (item.href) {
               return (

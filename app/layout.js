@@ -1,6 +1,22 @@
 import "./globals.css";
+import { Lora, Inter } from "next/font/google";
 import Analytics from "@/components/Analytics";
 import LayoutContent from "@/components/LayoutContent";
+
+const lora = Lora({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-lora",
+  display: "swap",
+});
+
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 const gscToken = process.env.NEXT_PUBLIC_GSC_TOKEN || "";
 
@@ -92,20 +108,19 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 5,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#020617" },
+    { media: "(prefers-color-scheme: light)", color: "#FBF8F3" },
+    { media: "(prefers-color-scheme: dark)", color: "#14151A" },
   ],
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body className="min-h-screen flex flex-col">
+    <html lang="en" className={`${lora.variable} ${inter.variable}`}>
+      <body className="min-h-screen flex flex-col font-sans antialiased">
         <Analytics />
-        <LayoutContent>
-        <main className="flex-1">{children}</main>
-        </LayoutContent>
+        <LayoutContent>{children}</LayoutContent>
       </body>
     </html>
   );
 }
+

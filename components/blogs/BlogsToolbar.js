@@ -4,9 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import ArticlesEmptyState from "@/components/blogs/ArticlesEmptyState";
 import ArticlesGrid from "@/components/blogs/ArticlesGrid";
 import BlogsFilters from "@/components/blogs/BlogsFilters";
-import { filterAndSortPosts, getPostTypes } from "@/components/blogs/blogToolbarUtils";
+import { filterAndSortPosts } from "@/components/blogs/blogToolbarUtils";
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 9;
 
 export default function BlogsToolbar({ posts = [], tags = [], categories = [], isAuthenticated = false }) {
   const [query, setQuery] = useState("");
@@ -16,16 +16,11 @@ export default function BlogsToolbar({ posts = [], tags = [], categories = [], i
   const [sort, setSort] = useState("latest");
   const [page, setPage] = useState(1);
 
-  const postTypes = useMemo(() => getPostTypes(posts), [posts]);
-
   const filtered = useMemo(
     () => filterAndSortPosts(posts, { query, category, postType, tag, sort }),
     [posts, query, category, postType, tag, sort]
   );
 
-  // Any filter/search/sort change invalidates the current page -- jump
-  // back to page 1 so you're never stranded on an out-of-range page
-  // showing zero results.
   useEffect(() => {
     setPage(1);
   }, [query, category, postType, tag, sort]);
@@ -48,71 +43,75 @@ export default function BlogsToolbar({ posts = [], tags = [], categories = [], i
 
   return (
     <div>
+      {/* Search & Sort Header Row */}
       <div className="grid gap-3 md:grid-cols-[1fr_auto]">
         <input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Search articles, topics, or authors..."
-          className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm font-semibold text-slate-800 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15 dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-white dark:placeholder:text-blue-100/50"
+          className="w-full rounded-xl border border-[#EBE5DB] bg-white px-4 py-2.5 text-xs md:text-sm font-medium text-[#1C1B29] outline-none transition-colors duration-200 focus:border-[#0B3C6B] dark:border-[#2C2E38] dark:bg-[#1E2028] dark:text-[#F2F0E9] dark:placeholder:text-[#A8A69A] dark:focus:border-[#5B9BD5]"
         />
         <select
           value={sort}
           onChange={(event) => setSort(event.target.value)}
-          className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm font-semibold text-slate-800 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15 dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-white"
+          className="rounded-xl border border-[#EBE5DB] bg-white px-4 py-2.5 text-xs md:text-sm font-medium text-[#1C1B29] outline-none transition-colors duration-200 focus:border-[#0B3C6B] dark:border-[#2C2E38] dark:bg-[#1E2028] dark:text-[#F2F0E9] dark:focus:border-[#5B9BD5]"
         >
-          <option value="latest">Latest</option>
-          <option value="oldest">Oldest</option>
-          <option value="popular">Most Viewed</option>
-          <option value="az">A to Z</option>
+          <option value="latest">Sort: Newest First</option>
+          <option value="oldest">Sort: Oldest First</option>
+          <option value="popular">Sort: Most Viewed</option>
+          <option value="az">Sort: Title A-Z</option>
         </select>
       </div>
 
+      {/* Category Tabs & Tag Dropdown */}
       <BlogsFilters
         categories={categories}
         category={category}
         onCategoryChange={setCategory}
-        postTypes={postTypes}
-        postType={postType}
-        onPostTypeChange={setPostType}
         tags={tags}
         tag={tag}
         onTagChange={setTag}
       />
 
-      <div className="mt-4 flex items-center justify-between">
-        <p className="text-sm font-semibold text-slate-600 dark:text-blue-100/70">
-          Showing <span className="font-extrabold text-slate-900 dark:text-white">{filtered.length}</span> of{" "}
-          <span className="font-extrabold text-slate-900 dark:text-white">{posts.length}</span> articles
+      {/* Count & Clear Filters Indicator */}
+      <div className="mt-4 mb-5 flex items-center justify-between">
+        <p className="text-xs text-[#6B6A5C] dark:text-[#A8A69A]">
+          Showing <span className="font-medium text-[#1C1B29] dark:text-[#F2F0E9]">{filtered.length}</span> of{" "}
+          <span className="font-medium text-[#1C1B29] dark:text-[#F2F0E9]">{posts.length}</span> articles
         </p>
         {hasActiveFilter && (
-          <button onClick={clearFilters} className="text-xs font-bold text-slate-400 transition hover:text-red-500 dark:text-blue-100/40 dark:hover:text-red-400">
+          <button
+            onClick={clearFilters}
+            className="text-xs font-medium text-[#C8102E] hover:underline dark:text-[#E85D6B]"
+          >
             Clear filters
           </button>
         )}
       </div>
 
+      {/* Articles Grid & Pagination */}
       {filtered.length > 0 ? (
         <>
           <ArticlesGrid posts={paginated} isAuthenticated={isAuthenticated} />
 
           {totalPages > 1 && (
-            <div className="mt-6 flex items-center justify-between gap-4">
+            <div className="mt-8 flex items-center justify-between rounded-xl border border-[#EBE5DB] bg-white px-4 py-3 text-xs font-medium text-[#6B6A5C] dark:border-[#2C2E38] dark:bg-[#1E2028] dark:text-[#A8A69A]">
               <button
                 type="button"
                 disabled={currentPage <= 1}
                 onClick={() => setPage(currentPage - 1)}
-                className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed dark:border-blue-400/20 dark:text-blue-100 dark:hover:bg-blue-950/40"
+                className="rounded-lg border border-[#EBE5DB] px-3.5 py-1.5 transition hover:bg-[#FBF8F3] disabled:cursor-not-allowed disabled:opacity-40 dark:border-[#2C2E38] dark:hover:bg-[#14151A]"
               >
                 ← Previous
               </button>
-              <span className="text-xs font-semibold text-slate-500 dark:text-blue-100/50">
+              <span>
                 Page {currentPage} of {totalPages}
               </span>
               <button
                 type="button"
                 disabled={currentPage >= totalPages}
                 onClick={() => setPage(currentPage + 1)}
-                className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed dark:border-blue-400/20 dark:text-blue-100 dark:hover:bg-blue-950/40"
+                className="rounded-lg border border-[#EBE5DB] px-3.5 py-1.5 transition hover:bg-[#FBF8F3] disabled:cursor-not-allowed disabled:opacity-40 dark:border-[#2C2E38] dark:hover:bg-[#14151A]"
               >
                 Next →
               </button>
@@ -120,7 +119,11 @@ export default function BlogsToolbar({ posts = [], tags = [], categories = [], i
           )}
         </>
       ) : (
-        <ArticlesEmptyState hasNoApprovedPosts={hasNoApprovedPosts} hasActiveFilter={hasActiveFilter} onClear={clearFilters} />
+        <ArticlesEmptyState
+          hasNoApprovedPosts={hasNoApprovedPosts}
+          hasActiveFilter={hasActiveFilter}
+          onClear={clearFilters}
+        />
       )}
     </div>
   );

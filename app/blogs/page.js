@@ -4,7 +4,7 @@ import { DUMMY_POSTS } from "@/lib/dummy";
 import { dbConnect, isDbEnabled } from "@/lib/db";
 import { Post } from "@/models/Post";
 import { getAuthUser } from "@/lib/auth";
-import AnimatedBlogsHeader from "./AnimatedBlogsHeader";
+import CompactBlogsHeader from "./AnimatedBlogsHeader";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -51,11 +51,10 @@ async function getPosts() {
       .populate("authorId", "name avatarUrl badge")
       .sort({ publishedAt: -1 })
       .lean();
-      // If database is connected but has no posts
     if (!posts || posts.length === 0) {
       return DUMMY_POSTS || [];
     }
-    return  posts.map(serializePost);
+    return posts.map(serializePost);
   } catch {
     return DUMMY_POSTS || [];
   }
@@ -76,17 +75,19 @@ export default async function BlogsPage() {
   ).sort((a, b) => a.localeCompare(b));
 
   return (
-    <Container>
-      <AnimatedBlogsHeader postsCount={posts.length} />
-      <div className="mt-6">
-        <BlogsToolbar
-          posts={visiblePosts}
-          totalCount={posts.length}
-          tags={tags}
-          categories={categories}
-          isAuthenticated={isAuthenticated}
-        />
-      </div>
-    </Container>
+    <div className="py-6 md:py-8">
+      <Container>
+        <CompactBlogsHeader postsCount={posts.length} />
+        <div className="mt-6">
+          <BlogsToolbar
+            posts={visiblePosts}
+            totalCount={posts.length}
+            tags={tags}
+            categories={categories}
+            isAuthenticated={isAuthenticated}
+          />
+        </div>
+      </Container>
+    </div>
   );
 }
