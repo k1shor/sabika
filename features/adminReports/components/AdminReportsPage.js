@@ -157,7 +157,7 @@ export default function AdminReportsPage() {
 
 function ReportCard({ report, busy, note, onNoteChange, onReview }) {
   const targetHref = report.targetType === "post"
-    ? `/admin/posts?q=${encodeURIComponent(report.targetLabel)}`
+    ? `/admin/dashboard/posts?q=${encodeURIComponent(report.targetLabel)}`
     : `/writers/${report.targetId}`;
 
   return (

@@ -19,9 +19,9 @@ function formatDate(value) {
 function notificationHref(item) {
   switch (item.type) {
     case "post_pending_review":
-      return "/admin/posts?tab=community&status=pending";
+      return "/admin/dashboard/posts?tab=community&status=pending";
     case "writer_application":
-      return "/admin/writer-applications";
+      return "/admin/dashboard/writers";
     case "post_rejected":
       return item.postSlug ? `/writers/posts/${item.postSlug}/edit` : "/writers/posts";
     case "new_post":

@@ -7,9 +7,7 @@ import Footer from '@/components/Footer';
 export default function LayoutContent({ children }) {
   const pathname = usePathname();
 
-  const hideLayout = [
-    '/admin/dashboard'
-  ].includes(pathname);
+  const hideLayout = [].includes(pathname);
 
   return (
     <>

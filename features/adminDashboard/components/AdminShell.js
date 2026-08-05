@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useState } from "react";
 import Link from "next/link";
 import { Sidebar, MobileNavDrawer } from "./Sidebar";
@@ -34,10 +35,14 @@ export default function AdminShell({ user, children }) {
         </div>
       </div>
 
-      <MobileNavDrawer open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
+      <Suspense fallback={null}>
+        <MobileNavDrawer open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
+      </Suspense>
 
       <div className="mx-auto flex max-w-7xl">
-        <Sidebar />
+        <Suspense fallback={null}>
+          <Sidebar user={user} />
+        </Suspense>
         <main className="min-w-0 flex-1 px-4 py-6 sm:px-6">
           {children}
         </main>

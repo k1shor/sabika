@@ -1,3 +1,5 @@
-import AuditLogsPage from "@/features/adminAudit/components/AuditLogsPage";
+import { redirect } from "next/navigation";
 
-export default AuditLogsPage;
+export default function AdminAuditLogsRoute() {
+  redirect("/admin/dashboard/audit");
+}

@@ -1,3 +1,5 @@
-import AdminReportsPage from "@/features/adminReports/components/AdminReportsPage";
+import { redirect } from "next/navigation";
 
-export default AdminReportsPage;
+export default function AdminReportsRoute() {
+  redirect("/admin/dashboard/reports");
+}

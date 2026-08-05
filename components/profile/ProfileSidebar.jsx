@@ -1,14 +1,42 @@
 "use client";
 
+import Link from "next/link";
 import { getInitials, getRoleColor, getRoleLabel } from "./profileUtils";
-
 function TabIcon({ tab, active }) {
   const cls = `shrink-0 ${active ? "opacity-90" : "opacity-50"}`;
-
+  if (tab === "Dashboard") {
+    return (
+      <svg className={cls} xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="7" height="9" rx="1" />
+        <rect x="14" y="3" width="7" height="5" rx="1" />
+        <rect x="14" y="12" width="7" height="9" rx="1" />
+        <rect x="3" y="16" width="7" height="5" rx="1" />
+      </svg>
+    );
+  }
   if (tab === "Profile") {
     return (
       <svg className={cls} xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+      </svg>
+    );
+  }
+
+  if (tab === "Bookmarks") {
+    return (
+      <svg className={cls} xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+      </svg>
+    );
+  }
+
+  if (tab === "Following") {
+    return (
+      <svg className={cls} xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
       </svg>
     );
   }
@@ -36,7 +64,9 @@ function TabIcon({ tab, active }) {
   return null;
 }
 
-export default function ProfileSidebar({ user, activeTab, tabs, onTabChange }) {
+export default function ProfileSidebar({ user, activeTab, tabs, items, onTabChange, title = "Settings" }) {
+  const navItems = items || tabs.map((tab) => ({ label: tab }));
+
   return (
     <aside className="w-full md:w-60 shrink-0 flex flex-col gap-4">
       <div className="rounded-3xl border border-slate-200 bg-white/70 p-5 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25 flex flex-col items-center text-center gap-3">
@@ -92,23 +122,34 @@ export default function ProfileSidebar({ user, activeTab, tabs, onTabChange }) {
 
       <div className="rounded-3xl border border-slate-200 bg-white/70 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25 overflow-hidden">
         <div className="px-4 py-2.5 border-b border-slate-100 dark:border-blue-400/10">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-blue-100/30">Settings</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-blue-100/30">{title}</p>
         </div>
         <nav className="p-2 flex flex-col gap-0.5">
-          {tabs.map((tab) => (
-            <button
-              key={tab}
-              onClick={() => onTabChange(tab)}
-              className={`w-full flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-left transition ${
-                activeTab === tab
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "text-slate-600 hover:bg-slate-100 dark:text-blue-100/70 dark:hover:bg-blue-950/40"
-              }`}
-            >
-              <TabIcon tab={tab} active={activeTab === tab} />
-              {tab}
-            </button>
-          ))}
+          {navItems.map((item) => {
+            const tab = item.label;
+            const isActive = activeTab === (item.value || tab);
+            const itemClass = `w-full flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-left transition ${
+              isActive
+                ? "bg-blue-600 text-white shadow-sm"
+                : "text-slate-600 hover:bg-slate-100 dark:text-blue-100/70 dark:hover:bg-blue-950/40"
+            }`;
+
+            if (item.href) {
+              return (
+                <Link key={item.href} href={item.href} className={itemClass}>
+                  <TabIcon tab={tab} active={isActive} />
+                  {tab}
+                </Link>
+              );
+            }
+
+            return (
+              <button key={tab} onClick={() => onTabChange(item.value || tab)} className={itemClass}>
+                <TabIcon tab={tab} active={isActive} />
+                {tab}
+              </button>
+            );
+          })}
         </nav>
       </div>
     </aside>

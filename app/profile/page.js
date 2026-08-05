@@ -40,14 +40,14 @@ export default function ProfilePage() {
 
   return (
     <Container>
-      <div className="flex flex-col md:flex-row gap-6 items-start">
+      <div className="flex flex-col gap-6 md:flex-row md:items-start">
         <ProfileSidebar
           user={user}
           activeTab={currentTab}
           tabs={tabs}
           onTabChange={setActiveTab}
         />
-        <div className="flex-1 min-w-0 rounded-3xl border border-slate-200 bg-white/70 p-6 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25">
+        <div className="min-w-0 flex-1 rounded-3xl border border-slate-200 bg-white/70 p-6 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25">
           {currentTab === "Profile" && <ProfileTab user={user} onUserUpdate={setUser} />}
           {currentTab === "Password" && <PasswordTab user={user} />}
           {currentTab === "My Articles" && <MyArticlesTab />}

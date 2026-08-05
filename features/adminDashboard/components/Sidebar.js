@@ -5,11 +5,21 @@ import { usePathname } from "next/navigation";
 import { NAV } from "../utils/dashboardUtils";
 import { IconClose } from "../icons/icons";
 
-function NavLinks({ pathname, onNavigate }) {
+function getInitials(name) {
+  if (!name) return "A";
+  return name.trim().split(/\s+/).map((word) => word[0]).join("").slice(0, 2).toUpperCase();
+}
+
+function getActiveView(pathname) {
+  const match = pathname.match(/^\/admin\/dashboard\/([^/]+)/);
+  return match?.[1] || "overview";
+}
+
+function NavLinks({ activeView, onNavigate }) {
   return (
-    <nav className="flex flex-col gap-1 px-3">
-      {NAV.map(({ label, href, Icon }) => {
-        const active = pathname === href;
+    <nav className="flex flex-col gap-1 p-2">
+      {NAV.map(({ label, href, view, Icon }) => {
+        const active = activeView === view;
         return (
           <Link
             key={href}
@@ -30,17 +40,43 @@ function NavLinks({ pathname, onNavigate }) {
   );
 }
 
-export function Sidebar() {
-  const pathname = usePathname();
+function AdminProfileCard({ user }) {
   return (
-    <aside className="hidden w-56 shrink-0 border-r border-slate-200 bg-white/70 py-6 dark:border-blue-400/20 dark:bg-blue-950/20 md:block">
-      <NavLinks pathname={pathname} />
+    <div className="rounded-3xl border border-slate-200 bg-white/70 p-5 text-center shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25">
+      <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-linear-to-br from-red-500 to-blue-700 text-2xl font-extrabold text-white ring-4 ring-white dark:ring-slate-900">
+        {getInitials(user?.name)}
+      </div>
+      <p className="mt-3 font-extrabold tracking-tight text-slate-900 dark:text-white">{user?.name || "Admin"}</p>
+      <p className="mt-0.5 break-all text-xs text-slate-500 dark:text-blue-100/50">{user?.email}</p>
+      <span className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-bold text-red-700 dark:border-red-400/20 dark:bg-red-950/40 dark:text-red-300">
+        <span className="h-1.5 w-1.5 rounded-full bg-current opacity-70" />
+        System Admin
+      </span>
+    </div>
+  );
+}
+
+export function Sidebar({ user }) {
+  const pathname = usePathname();
+  const activeView = getActiveView(pathname);
+  return (
+    <aside className="hidden w-72 shrink-0 py-6 pr-5 md:block">
+      <div className="sticky top-24 grid gap-4">
+        <AdminProfileCard user={user} />
+        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white/70 shadow-sm dark:border-blue-400/20 dark:bg-blue-950/25">
+          <div className="border-b border-slate-100 px-4 py-2.5 dark:border-blue-400/10">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-blue-100/30">Admin Dashboard</p>
+          </div>
+          <NavLinks activeView={activeView} />
+        </div>
+      </div>
     </aside>
   );
 }
 
 export function MobileNavDrawer({ open, onClose }) {
   const pathname = usePathname();
+  const activeView = getActiveView(pathname);
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 md:hidden">
@@ -52,7 +88,7 @@ export function MobileNavDrawer({ open, onClose }) {
             <IconClose className="h-4.5 w-4.5" />
           </button>
         </div>
-        <NavLinks pathname={pathname} onNavigate={onClose} />
+        <NavLinks activeView={activeView} onNavigate={onClose} />
       </div>
     </div>
   );
