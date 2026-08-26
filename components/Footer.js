@@ -145,7 +145,7 @@ export default function Footer() {
           </div>
 
           <div className="text-sm text-slate-500 dark:text-blue-100/70">
-            Designed for healthcare learning.
+            Technology Partner - Index IT Hub.
           </div>
         </div>
       </Container>
