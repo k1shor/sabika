@@ -2,14 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { BookmarkIcon, ChevronIcon, FollowIcon, HomeIcon, LogoutIcon, PenIcon, UserIcon } from "./HeaderIcons";
+import { ChevronIcon, LogoutIcon, UserIcon } from "./HeaderIcons";
 import { getInitials, getRoleLabel } from "./headerUtils";
 
 export default function AvatarDropdown({ user, onLogout }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
-  const canWritePosts =
-    user?.role === "blog_writer" && user?.writerVerification?.status === "approved";
 
   useEffect(() => {
     function handleClick(event) {
@@ -20,11 +18,7 @@ export default function AvatarDropdown({ user, onLogout }) {
   }, []);
 
   const menuItems = [
-    { href: "/profile", icon: UserIcon, label: "My Profile" },
-    { href: "/saved", icon: BookmarkIcon, label: "My Bookmarks" },
-    { href: "/following", icon: FollowIcon, label: "Following" },
-    ...(canWritePosts ? [{ href: "/writers/posts", icon: PenIcon, label: "My Posts" }] : []),
-    { href: "/dashboard", icon: HomeIcon, label: "Dashboard" },
+    { href: user?.role === "admin" ? "/admin/dashboard/profile" : "/dashboard/profile", icon: UserIcon, label: "My Profile" },
   ];
 
   return (

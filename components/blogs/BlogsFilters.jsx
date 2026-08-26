@@ -1,65 +1,66 @@
 "use client";
 
-import { useState } from "react";
-import FilterButton from "./FilterButton";
-import { CATEGORY_LABELS, POST_TYPE_LABELS } from "./blogToolbarUtils";
-
-const TAG_LIMIT = 8;
+import { CATEGORY_LABELS } from "./blogToolbarUtils";
 
 export default function BlogsFilters({
-  categories,
-  category,
+  categories = [],
+  category = "all",
   onCategoryChange,
-  postTypes,
-  postType,
-  onPostTypeChange,
-  tags,
-  tag,
+  tags = [],
+  tag = "all",
   onTagChange,
 }) {
-  const [showAllTags, setShowAllTags] = useState(false);
-
-  const visibleTags = showAllTags ? tags : tags.slice(0, TAG_LIMIT);
-  const hasMoreTags = tags.length > TAG_LIMIT;
+  // Max 5-6 category tabs visible
+  const visibleCategories = categories.slice(0, 6);
 
   return (
-    <>
-      <div className="mt-3 flex flex-wrap gap-2">
-        {categories.length > 0 && (
-          <>
-            <FilterButton active={category === "all"} onClick={() => onCategoryChange("all")}>All</FilterButton>
-            {categories.map((item) => (
-              <FilterButton key={item} active={category === item} onClick={() => onCategoryChange(item === category ? "all" : item)}>
-                {CATEGORY_LABELS[item] || item.replace(/_/g, " ")}
-              </FilterButton>
-            ))}
-          </>
-        )}
+    <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      {/* Category Tabs (Max 5-6 visible) */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => onCategoryChange("all")}
+          className={categoryTabClass(category === "all")}
+        >
+          All Categories
+        </button>
+        {visibleCategories.map((item) => (
+          <button
+            key={item}
+            type="button"
+            onClick={() => onCategoryChange(item === category ? "all" : item)}
+            className={categoryTabClass(category === item)}
+          >
+            {CATEGORY_LABELS[item] || item.replace(/_/g, " ")}
+          </button>
+        ))}
       </div>
 
-      {(postTypes.length > 1 || tags.length > 0) && (
-        <div className="mt-2 flex flex-wrap gap-2">
-          {postTypes.length > 1 && postTypes.map((item) => (
-            <FilterButton key={item} active={postType === item} onClick={() => onPostTypeChange(item === postType ? "all" : item)}>
-              {POST_TYPE_LABELS[item] || item}
-            </FilterButton>
-          ))}
-          {visibleTags.map((item) => (
-            <FilterButton key={item} active={tag === item} onClick={() => onTagChange(item === tag ? "all" : item)}>
-              #{item}
-            </FilterButton>
-          ))}
-          {hasMoreTags && (
-            <button
-              type="button"
-              onClick={() => setShowAllTags((prev) => !prev)}
-              className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1"
-            >
-              {showAllTags ? "Show less" : `+${tags.length - TAG_LIMIT} more`}
-            </button>
-          )}
+      {/* Single "Browse by topic" dropdown for tags */}
+      {tags.length > 0 && (
+        <div className="shrink-0">
+          <select
+            value={tag}
+            onChange={(e) => onTagChange(e.target.value)}
+            className="w-full sm:w-auto rounded-xl border border-[#EBE5DB] bg-white px-3 py-1.5 text-xs font-medium text-[#1C1B29] outline-none transition-colors duration-200 focus:border-[#0B3C6B] dark:border-[#2C2E38] dark:bg-[#1E2028] dark:text-[#F2F0E9] dark:focus:border-[#5B9BD5]"
+          >
+            <option value="all">Browse by Topic / Tag</option>
+            {tags.map((t) => (
+              <option key={t} value={t}>
+                #{t}
+              </option>
+            ))}
+          </select>
         </div>
       )}
-    </>
+    </div>
   );
+}
+
+function categoryTabClass(active) {
+  return `rounded-xl px-3 py-1.5 text-xs font-medium transition-colors duration-200 ${
+    active
+      ? "bg-[#0B3C6B] text-white dark:bg-[#5B9BD5] dark:text-[#14151A]"
+      : "border border-[#EBE5DB] bg-white text-[#6B6A5C] hover:bg-[#FBF8F3] hover:text-[#1C1B29] dark:border-[#2C2E38] dark:bg-[#1E2028] dark:text-[#A8A69A] dark:hover:bg-[#14151A] dark:hover:text-[#F2F0E9]"
+  }`;
 }

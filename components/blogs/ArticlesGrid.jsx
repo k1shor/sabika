@@ -10,9 +10,9 @@ export default function ArticlesGrid({ posts, isAuthenticated = false }) {
   const visiblePosts = showPaywall ? posts.slice(0, FREE_GUEST_ARTICLES) : posts;
 
   return (
-    <div className="mt-6 grid gap-4 md:grid-cols-2">
-      {visiblePosts.map((post) => (
-        <BlogCard key={post._id || post.slug} post={post} />
+    <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {visiblePosts.map((post, index) => (
+        <BlogCard key={post._id || post.slug} post={post} index={index} />
       ))}
       {showPaywall && <ArticlesPaywallCard />}
     </div>

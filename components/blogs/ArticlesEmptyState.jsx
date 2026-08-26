@@ -21,7 +21,7 @@ export default function ArticlesEmptyState({ hasNoApprovedPosts, hasActiveFilter
           <Link href="/writers/posts" className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-bold text-white transition hover:bg-blue-700">
             Write article
           </Link>
-          <Link href="/admin/posts" className="rounded-xl border border-slate-200 bg-white px-5 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-blue-100">
+          <Link href="/admin/dashboard/posts" className="rounded-xl border border-slate-200 bg-white px-5 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 dark:border-blue-400/20 dark:bg-blue-950/30 dark:text-blue-100">
             Review posts
           </Link>
         </div>

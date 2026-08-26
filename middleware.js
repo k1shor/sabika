@@ -9,7 +9,7 @@ async function verifyTokenEdge(token) {
     const { payload } = await jwtVerify(token, secret);
 
     return payload;
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -41,7 +41,7 @@ export async function middleware(req) {
 
   // ✅ Authenticated users shouldn't access login/register pages
   if (decodedToken && isAuthRoute) {
-    url.pathname = "/dashboard";
+    url.pathname = decodedToken.role === "admin" ? "/admin/dashboard" : "/dashboard/profile";
     return NextResponse.redirect(url);
   }
 
@@ -63,9 +63,19 @@ export async function middleware(req) {
   // ✅ Admin-only routes
   if (decodedToken && isAdminRoute) {
     if (decodedToken.role !== "admin") {
-      url.pathname = "/dashboard";
+      url.pathname = "/dashboard/profile";
       return NextResponse.redirect(url);
     }
+  }
+
+  // ✅ Redirect admins from simple /dashboard or /dashboard/overview to /admin/dashboard
+  if (
+    decodedToken &&
+    decodedToken.role === "admin" &&
+    (path === "/dashboard" || path === "/dashboard/overview")
+  ) {
+    url.pathname = "/admin/dashboard";
+    return NextResponse.redirect(url);
   }
 
   // ✅ Writer-only routes (admins allowed)
@@ -74,7 +84,7 @@ export async function middleware(req) {
       decodedToken.role !== "blog_writer" &&
       decodedToken.role !== "admin"
     ) {
-      url.pathname = "/dashboard";
+      url.pathname = "/dashboard/profile";
       return NextResponse.redirect(url);
     }
   }
@@ -85,7 +95,7 @@ export async function middleware(req) {
     decodedToken.role === "admin" &&
     path === "/writers/posts"
   ) {
-    url.pathname = "/admin/posts";
+    url.pathname = "/admin/dashboard/posts";
     url.search = "?tab=official";
     return NextResponse.redirect(url);
   }

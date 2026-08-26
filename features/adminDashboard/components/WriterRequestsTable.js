@@ -114,7 +114,7 @@ export default function WriterRequestsTable({ initialWriters = [] }) {
             </span>
           )}
         </p>
-        <Link href="/admin/writer-applications"
+        <Link href="/admin/dashboard/writers"
           className="text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400">
           View all →
         </Link>

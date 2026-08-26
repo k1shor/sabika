@@ -1,3 +1,5 @@
-import WriterApplicationsPage from "@/features/writerApplications/components/WriterApplicationsPage";
+import { redirect } from "next/navigation";
 
-export default WriterApplicationsPage;
+export default function AdminWriterApplicationsRoute() {
+  redirect("/admin/dashboard/writers");
+}

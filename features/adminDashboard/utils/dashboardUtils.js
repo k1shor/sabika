@@ -1,13 +1,15 @@
-import { IconHome, IconPosts, IconUsers, IconWriter, IconMail, IconFlag, IconPost, IconJoin } from "../icons/icons";
+import { IconHome, IconPosts, IconUsers, IconWriter, IconMail, IconFlag, IconPost, IconJoin, IconHelpCircle } from "../icons/icons";
 
 export const NAV = [
-  { label: "Dashboard",       href: "/admin/dashboard",           Icon: IconHome },
-  { label: "Posts",           href: "/admin/posts",               Icon: IconPosts },
-  { label: "Users",           href: "/admin/users/manage",        Icon: IconUsers },
-  { label: "Writer Requests", href: "/admin/writer-applications", Icon: IconWriter },
-  { label: "Reports",         href: "/admin/reports",             Icon: IconFlag },
-  { label: "Audit Logs",      href: "/admin/audit-logs",          Icon: IconFlag },
-  { label: "Contact",         href: "/admin/contact-messages",    Icon: IconMail },
+  { label: "Dashboard",       view: "overview", href: "/admin/dashboard",                 Icon: IconHome },
+  { label: "Posts",           view: "posts",    href: "/admin/dashboard/posts",           Icon: IconPosts },
+  { label: "Users",           view: "users",    href: "/admin/dashboard/users",           Icon: IconUsers },
+  { label: "Writer Requests", view: "writers",  href: "/admin/dashboard/writers",         Icon: IconWriter },
+  { label: "Reports",         view: "reports",  href: "/admin/dashboard/reports",         Icon: IconFlag },
+  { label: "Audit Logs",      view: "audit",    href: "/admin/dashboard/audit",           Icon: IconFlag },
+  { label: "Contact",         view: "contact",  href: "/admin/dashboard/contact",         Icon: IconMail },
+  { label: "FAQs",            view: "faqs",     href: "/admin/dashboard/faqs",            Icon: IconHelpCircle },
+  { label: "My Profile",      view: "profile",  href: "/admin/dashboard/profile",         Icon: IconUsers },
 ];
 
 export function activityIcon(action) {

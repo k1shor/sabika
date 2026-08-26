@@ -103,6 +103,7 @@ const NAV = [
   { label: "Users",           href: "/admin/users/manage",        Icon: IconUsers },
   { label: "Writer Requests", href: "/admin/writer-applications", Icon: IconWriter },
   { label: "Contact",         href: "/admin/contact-messages",    Icon: IconMail },
+  { label: "My Profile",       href:"/admin/profile",                   Icon: IconMail    }
 ];
 
 // ─── Stat card ──────────────────────────────────────────────────────────────

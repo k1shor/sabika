@@ -1,32 +1,74 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { fadeUp, stagger } from "./dashboardUtils";
-
 export default function QuickStats({ role, posts }) {
   if (role === "visitor") return null;
 
   const stats = role === "blog_writer"
     ? [
-        { label: "Published", value: posts.filter((post) => post.status === "approved").length, icon: "OK", color: "border-emerald-200 bg-emerald-50 dark:border-emerald-500/20 dark:bg-emerald-950/20", text: "text-emerald-700 dark:text-emerald-400" },
-        { label: "Pending", value: posts.filter((post) => post.status === "pending").length, icon: "...", color: "border-amber-200 bg-amber-50 dark:border-amber-500/20 dark:bg-amber-950/20", text: "text-amber-700 dark:text-amber-400" },
-        { label: "Drafts", value: posts.filter((post) => post.status === "draft").length, icon: "DR", color: "border-slate-200 bg-slate-50 dark:border-slate-500/20 dark:bg-slate-900/20", text: "text-slate-600 dark:text-slate-400" },
+        {
+          label: "Published",
+          value: posts ? posts.filter((post) => post.status === "approved").length : 0,
+          border: "border-l-[#4F7B62] dark:border-l-[#6B9B7E]",
+          text: "text-[#4F7B62] dark:text-[#6B9B7E]",
+          bg: "bg-[#4F7B62]/10 dark:bg-[#6B9B7E]/15",
+        },
+        {
+          label: "Pending",
+          value: posts ? posts.filter((post) => post.status === "pending").length : 0,
+          border: "border-l-[#E0A458] dark:border-l-[#F0BE7A]",
+          text: "text-[#E0A458] dark:text-[#F0BE7A]",
+          bg: "bg-[#E0A458]/10 dark:bg-[#F0BE7A]/15",
+        },
+        {
+          label: "Drafts",
+          value: posts ? posts.filter((post) => post.status === "draft").length : 0,
+          border: "border-l-[#0B3C6B] dark:border-l-[#5B9BD5]",
+          text: "text-[#0B3C6B] dark:text-[#5B9BD5]",
+          bg: "bg-[#0B3C6B]/10 dark:bg-[#5B9BD5]/15",
+        },
       ]
     : [
-        { label: "Total Blogs", value: "-", icon: "BL", color: "border-red-200 bg-red-50/60 dark:border-red-500/20 dark:bg-red-950/20", text: "text-[#DC143C] dark:text-red-400" },
-        { label: "Total Users", value: "-", icon: "US", color: "border-blue-200 bg-blue-50/60 dark:border-blue-500/20 dark:bg-blue-950/20", text: "text-[#003893] dark:text-blue-400" },
-        { label: "Pending Review", value: "-", icon: "RV", color: "border-amber-200 bg-amber-50/60 dark:border-amber-500/20 dark:bg-amber-950/20", text: "text-amber-700 dark:text-amber-400" },
+        {
+          label: "Total Blogs",
+          value: "-",
+          border: "border-l-[#C8102E] dark:border-l-[#E85D6B]",
+          text: "text-[#C8102E] dark:text-[#E85D6B]",
+          bg: "bg-[#C8102E]/10 dark:bg-[#E85D6B]/15",
+        },
+        {
+          label: "Total Users",
+          value: "-",
+          border: "border-l-[#0B3C6B] dark:border-l-[#5B9BD5]",
+          text: "text-[#0B3C6B] dark:text-[#5B9BD5]",
+          bg: "bg-[#0B3C6B]/10 dark:bg-[#5B9BD5]/15",
+        },
+        {
+          label: "Pending Review",
+          value: "-",
+          border: "border-l-[#E0A458] dark:border-l-[#F0BE7A]",
+          text: "text-[#E0A458] dark:text-[#F0BE7A]",
+          bg: "bg-[#E0A458]/10 dark:bg-[#F0BE7A]/15",
+        },
       ];
 
   return (
-    <motion.div variants={stagger} className="grid grid-cols-3 gap-3">
+    <div className="grid grid-cols-3 gap-3 md:gap-4">
       {stats.map((stat) => (
-        <motion.div key={stat.label} variants={fadeUp} whileHover={{ y: -4 }} className={`rounded-2xl border ${stat.color} p-4 shadow-sm`}>
-          <div className="mb-1 text-xs font-extrabold">{stat.icon}</div>
-          <div className={`text-3xl font-extrabold ${stat.text}`}>{stat.value}</div>
-          <div className="mt-0.5 text-xs font-semibold text-slate-500 dark:text-slate-400">{stat.label}</div>
-        </motion.div>
+        <div
+          key={stat.label}
+          className={`group flex flex-col justify-between rounded-xl border border-[#EBE5DB] bg-white p-4 border-l-4 ${stat.border} transition-transform duration-200 hover:scale-[1.02] dark:border-[#2C2E38] dark:bg-[#1E2028]`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-[#6B6A5C] dark:text-[#A8A69A]">
+              {stat.label}
+            </span>
+            <span className={`h-2 w-2 rounded-full ${stat.bg}`} />
+          </div>
+          <div className={`mt-2 font-serif text-2xl md:text-3xl font-medium tracking-tight ${stat.text}`}>
+            {stat.value}
+          </div>
+        </div>
       ))}
-    </motion.div>
+    </div>
   );
 }
